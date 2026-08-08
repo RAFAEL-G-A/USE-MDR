@@ -1,0 +1,5 @@
+[functions.request-admin-code]
+verify_jwt = false
+
+[functions.verify-admin-code]
+verify_jwt = false

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 import {
   catalogCategories,
   catalogTaxonomy,
@@ -26,12 +26,37 @@ function fileExtension(file: File) {
   return extension && /^[a-z0-9]+$/.test(extension) ? extension : "jpg";
 }
 
+function sessionHasEmailVerification(session: Session | null) {
+  if (!session) return false;
+
+  try {
+    const encodedPayload = session.access_token.split(".")[1];
+    const normalizedPayload = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(
+      atob(normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, "=")),
+    ) as { session_id?: string };
+    const metadata = session.user.app_metadata;
+    const verifiedUntil = Date.parse(metadata.inventory_email_verified_until ?? "");
+
+    return (
+      metadata.inventory_email_verified_session_id === payload.session_id &&
+      Number.isFinite(verifiedUntil) &&
+      verifiedUntil > Date.now()
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function AdminProductForm() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const formRef = useRef<HTMLFormElement>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [authenticating, setAuthenticating] = useState(false);
+  const [requestingCode, setRequestingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [category, setCategory] = useState<CatalogCategory>("Lábios");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -40,15 +65,17 @@ export function AdminProductForm() {
     () => (imageFile ? URL.createObjectURL(imageFile) : null),
     [imageFile],
   );
+  const user = session?.user ?? null;
+  const emailVerified = sessionHasEmailVerification(session);
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
+      setSession(data.session);
       setCheckingSession(false);
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      setSession(session);
       setCheckingSession(false);
     });
 
@@ -83,7 +110,63 @@ export function AdminProductForm() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    setCodeSent(false);
     setFeedback(null);
+  }
+
+  async function handleRequestCode() {
+    setRequestingCode(true);
+    setFeedback(null);
+    const { error } = await supabase.functions.invoke("request-admin-code", {
+      body: {},
+    });
+
+    if (error) {
+      setFeedback({
+        type: "error",
+        message: "Não foi possível enviar o código. Confira a configuração do serviço de e-mail.",
+      });
+    } else {
+      setCodeSent(true);
+      setFeedback({
+        type: "success",
+        message: "Código enviado. Verifique sua caixa de entrada e também a pasta de spam.",
+      });
+    }
+    setRequestingCode(false);
+  }
+
+  async function handleVerifyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setVerifyingCode(true);
+    setFeedback(null);
+    const formData = new FormData(event.currentTarget);
+    const code = String(formData.get("code") ?? "").trim();
+    const { error } = await supabase.functions.invoke("verify-admin-code", {
+      body: { code },
+    });
+
+    if (error) {
+      setFeedback({
+        type: "error",
+        message: "Código inválido, expirado ou com limite de tentativas atingido.",
+      });
+      setVerifyingCode(false);
+      return;
+    }
+
+    const { data, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !data.session || !sessionHasEmailVerification(data.session)) {
+      setFeedback({
+        type: "error",
+        message: "O código foi aceito, mas a autorização não pôde ser atualizada. Entre novamente.",
+      });
+    } else {
+      setSession(data.session);
+      setCodeSent(false);
+      setFeedback(null);
+    }
+    setVerifyingCode(false);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -225,6 +308,68 @@ export function AdminProductForm() {
             {authenticating ? "ENTRANDO..." : "ENTRAR"}
           </button>
         </form>
+      </section>
+    );
+  }
+
+  if (!emailVerified) {
+    return (
+      <section className="max-w-xl rounded-[2rem] border border-brand-border bg-white p-6 shadow-soft sm:p-8">
+        <p className="text-xs font-extrabold tracking-[0.18em] text-brand">SEGUNDA CAMADA</p>
+        <h2 className="mt-2 font-serif text-3xl">Confirme o código do e-mail</h2>
+        <p className="mt-3 text-sm leading-6 text-muted">
+          A senha foi aceita. Agora enviaremos um código aleatório de seis dígitos para {user.email}.
+          Ele será válido somente nesta sessão.
+        </p>
+
+        {!codeSent ? (
+          <button
+            type="button"
+            onClick={handleRequestCode}
+            disabled={requestingCode}
+            className="mt-7 min-h-13 w-full rounded-full bg-brand px-6 text-sm font-extrabold text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand-strong disabled:cursor-wait disabled:opacity-60"
+          >
+            {requestingCode ? "ENVIANDO..." : "ENVIAR CÓDIGO POR E-MAIL"}
+          </button>
+        ) : (
+          <form onSubmit={handleVerifyCode} className="mt-7 space-y-5">
+            <FormField label="Código de seis dígitos" htmlFor="admin-code">
+              <input
+                id="admin-code"
+                name="code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                minLength={6}
+                maxLength={6}
+                pattern="[0-9]{6}"
+                className="form-control text-center text-2xl font-bold tracking-[0.35em]"
+                placeholder="000000"
+              />
+            </FormField>
+            <button
+              type="submit"
+              disabled={verifyingCode}
+              className="min-h-13 w-full rounded-full bg-brand px-6 text-sm font-extrabold text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand-strong disabled:cursor-wait disabled:opacity-60"
+            >
+              {verifyingCode ? "VERIFICANDO..." : "CONFIRMAR CÓDIGO"}
+            </button>
+            <button
+              type="button"
+              onClick={handleRequestCode}
+              disabled={requestingCode}
+              className="w-full text-xs font-bold text-brand disabled:opacity-60"
+            >
+              Enviar outro código
+            </button>
+          </form>
+        )}
+
+        {feedback && <div className="mt-5"><FeedbackMessage feedback={feedback} /></div>}
+        <button type="button" onClick={handleLogout} className="mt-5 w-full text-xs font-bold text-muted">
+          Sair da conta
+        </button>
       </section>
     );
   }
