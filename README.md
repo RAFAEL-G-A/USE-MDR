@@ -38,7 +38,9 @@ flowchart LR
   C --> D[E-mail da administradora]
   D --> E[Edge Function verifica código]
   E --> F[Autorização temporária vinculada à sessão]
-  F --> G[RLS libera inventário e Storage]
+  F --> G[API create-product]
+  G --> J[Valida categoria, imagem e dados]
+  J --> K[Storage e tabela products]
   H[Clientes] --> I[Leitura pública do catálogo]
 ```
 
@@ -90,8 +92,17 @@ Para preparar o Supabase:
 3. substitua `ADMIN_EMAIL_AQUI` pelo e-mail da conta;
 4. execute o arquivo no **SQL Editor** do Supabase;
 5. configure os Secrets indicados em `supabase/functions/.env.example`;
-6. publique as funções `request-admin-code` e `verify-admin-code`;
+6. publique as funções `request-admin-code`, `verify-admin-code` e
+   `create-product`;
 7. saia e entre novamente na área administrativa para atualizar a sessão.
+
+### API de cadastro
+
+A Edge Function `create-product` recebe uma única requisição autenticada em
+`multipart/form-data` com nome, preço, categoria, subcategoria, descrição,
+estoque e imagem. Ela valida a taxonomia, envia a foto ao bucket `products` e
+insere o registro na tabela `products`. Se a inserção falhar, o upload é
+removido automaticamente.
 
 ## Verificações
 

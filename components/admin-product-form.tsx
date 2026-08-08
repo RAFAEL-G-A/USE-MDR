@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { FunctionsHttpError, type Session } from "@supabase/supabase-js";
 import {
   catalogCategories,
   catalogTaxonomy,
@@ -21,9 +21,12 @@ function normalizePrice(value: string) {
   return Number(value.replace(/\./g, "").replace(",", "."));
 }
 
-function fileExtension(file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  return extension && /^[a-z0-9]+$/.test(extension) ? extension : "jpg";
+async function functionErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof FunctionsHttpError) {
+    const body = await error.context.json().catch(() => null) as { error?: string } | null;
+    return body?.error ?? fallback;
+  }
+  return fallback;
 }
 
 function sessionHasEmailVerification(session: Session | null) {
@@ -124,7 +127,10 @@ export function AdminProductForm() {
     if (error) {
       setFeedback({
         type: "error",
-        message: "Não foi possível enviar o código. Confira a configuração do serviço de e-mail.",
+        message: await functionErrorMessage(
+          error,
+          "Não foi possível enviar o código. Confira a configuração do serviço de e-mail.",
+        ),
       });
     } else {
       setCodeSent(true);
@@ -149,7 +155,10 @@ export function AdminProductForm() {
     if (error) {
       setFeedback({
         type: "error",
-        message: "Código inválido, expirado ou com limite de tentativas atingido.",
+        message: await functionErrorMessage(
+          error,
+          "Código inválido, expirado ou com limite de tentativas atingido.",
+        ),
       });
       setVerifyingCode(false);
       return;
@@ -206,43 +215,25 @@ export function AdminProductForm() {
     }
 
     setSaving(true);
-    const imagePath = `catalog/${crypto.randomUUID()}.${fileExtension(imageFile)}`;
-    const { error: uploadError } = await supabase.storage
-      .from("products")
-      .upload(imagePath, imageFile, {
-        cacheControl: "31536000",
-        contentType: imageFile.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      setFeedback({
-        type: "error",
-        message: `Não foi possível enviar a imagem: ${uploadError.message}`,
-      });
-      setSaving(false);
-      return;
-    }
-
-    const { data: publicImage } = supabase.storage
-      .from("products")
-      .getPublicUrl(imagePath);
-
-    const { error: insertError } = await supabase.from("products").insert({
-      name,
-      price,
-      category,
-      subcategory,
-      image_url: publicImage.publicUrl,
-      description: description || null,
-      stock,
+    const requestData = new FormData();
+    requestData.set("name", name);
+    requestData.set("price", String(price));
+    requestData.set("category", category);
+    requestData.set("subcategory", subcategory);
+    requestData.set("description", description);
+    requestData.set("stock", String(stock));
+    requestData.set("image", imageFile);
+    const { error: createError } = await supabase.functions.invoke("create-product", {
+      body: requestData,
     });
 
-    if (insertError) {
-      await supabase.storage.from("products").remove([imagePath]);
+    if (createError) {
       setFeedback({
         type: "error",
-        message: `A imagem foi enviada, mas o produto não foi salvo: ${insertError.message}`,
+        message: await functionErrorMessage(
+          createError,
+          "Não foi possível cadastrar o produto. Confira os dados e sua autorização administrativa.",
+        ),
       });
       setSaving(false);
       return;

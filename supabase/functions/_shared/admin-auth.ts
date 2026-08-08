@@ -76,6 +76,19 @@ export async function authenticateAdmin(request: Request): Promise<AdminContext>
   return { adminClient, sessionId, user };
 }
 
+export function assertInventoryAccess(context: AdminContext) {
+  const metadata = context.user.app_metadata;
+  const verifiedUntil = Date.parse(metadata.inventory_email_verified_until ?? "");
+
+  if (
+    metadata.inventory_email_verified_session_id !== context.sessionId ||
+    !Number.isFinite(verifiedUntil) ||
+    verifiedUntil <= Date.now()
+  ) {
+    throw new Error("Confirme o código enviado por e-mail antes de alterar o inventário.");
+  }
+}
+
 export async function hashCode(userId: string, sessionId: string, challengeId: string, code: string) {
   const pepper = Deno.env.get("OTP_PEPPER");
   if (!pepper || pepper.length < 32) {

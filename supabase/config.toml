@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.verify-admin-code]
 verify_jwt = false
+
+[functions.create-product]
+verify_jwt = false
