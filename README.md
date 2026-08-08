@@ -44,6 +44,20 @@ O número do WhatsApp deve conter somente números, incluindo código do país e
 
 O arquivo `.env.local` é ignorado pelo Git e não deve ser enviado ao repositório.
 
+## Área administrativa
+
+A página `/admin/produtos` permite cadastrar produtos e enviar imagens pelo
+celular ou computador. O acesso utiliza uma conta do Supabase Auth e as
+operações são protegidas por Row Level Security.
+
+Para preparar o Supabase:
+
+1. crie a conta da administradora em **Authentication > Users**;
+2. abra `supabase/admin-catalog-setup.sql`;
+3. substitua `ADMIN_EMAIL_AQUI` pelo e-mail da conta;
+4. execute o arquivo no **SQL Editor** do Supabase;
+5. saia e entre novamente na área administrativa para atualizar a sessão.
+
 ## Verificações
 
 ```bash

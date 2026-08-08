@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@layer components {
+  .form-control {
+    @apply min-h-12 w-full rounded-2xl border border-brand-border bg-white px-4 py-3 text-sm text-foreground outline-none transition-shadow placeholder:text-muted/60 focus:shadow-[0_0_0_3px_var(--brand-soft)];
+  }
+}
+
 :root {
   --background: #fff9fb;
   --surface: #ffffff;
