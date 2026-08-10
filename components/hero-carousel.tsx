@@ -2,12 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import type { HeroSlide } from "@/lib/hero-slides";
+
+const SWIPE_THRESHOLD = 45;
 
 export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
+  const dragStartX = useRef<number | null>(null);
+  const dragDistance = useRef(0);
+  const paused = hovered || dragging || focusWithin;
 
   useEffect(() => {
     if (slides.length < 2 || paused) return;
@@ -28,15 +35,55 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
     setActiveIndex((current) => (current + 1) % slides.length);
   }
 
+  function handlePointerDown(event: PointerEvent<HTMLElement>) {
+    if (slides.length < 2 || (event.target as HTMLElement).closest("a, button")) return;
+    dragStartX.current = event.clientX;
+    dragDistance.current = 0;
+    setDragging(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLElement>) {
+    if (dragStartX.current === null) return;
+    dragDistance.current = event.clientX - dragStartX.current;
+  }
+
+  function finishSwipe(event: PointerEvent<HTMLElement>) {
+    if (dragStartX.current === null) return;
+    const distance = dragDistance.current;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragStartX.current = null;
+    dragDistance.current = 0;
+    setDragging(false);
+    if (Math.abs(distance) < SWIPE_THRESHOLD) return;
+    if (distance < 0) showNext();
+    else showPrevious();
+  }
+
+  function cancelSwipe() {
+    dragStartX.current = null;
+    dragDistance.current = 0;
+    setDragging(false);
+  }
+
   return (
     <section
-      className="relative min-h-[35rem] overflow-hidden rounded-[2rem] border border-brand-border bg-brand-soft shadow-soft sm:min-h-[38rem] md:min-h-[30rem]"
+      className={`relative min-h-[35rem] touch-pan-y select-none overflow-hidden rounded-[2rem] border border-brand-border bg-brand-soft shadow-soft sm:min-h-[38rem] md:min-h-[30rem] ${slides.length > 1 ? "cursor-grab active:cursor-grabbing" : ""}`}
       aria-label="Destaques da USE MDR"
       aria-roledescription="carrossel"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocusWithin(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusWithin(false);
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={finishSwipe}
+      onPointerCancel={cancelSwipe}
+      onDragStart={(event) => event.preventDefault()}
     >
       {slides.map((slide, index) => {
         const isActive = index === visibleIndex;
@@ -68,8 +115,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
       })}
 
       {slides.length > 1 && (
-        <div className="absolute inset-x-0 bottom-4 z-20 flex items-center justify-center gap-3">
-          <button type="button" onClick={showPrevious} aria-label="Destaque anterior" className="flex size-9 items-center justify-center rounded-full border border-white/60 bg-white/85 text-lg text-brand shadow-sm backdrop-blur">←</button>
+        <div className="absolute inset-x-0 bottom-4 z-20 flex items-center justify-center">
           <div className="flex gap-1.5 rounded-full bg-white/85 px-3 py-2 shadow-sm backdrop-blur" aria-label="Escolher destaque">
             {slides.map((slide, index) => (
               <button
@@ -82,7 +128,6 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               />
             ))}
           </div>
-          <button type="button" onClick={showNext} aria-label="Próximo destaque" className="flex size-9 items-center justify-center rounded-full border border-white/60 bg-white/85 text-lg text-brand shadow-sm backdrop-blur">→</button>
         </div>
       )}
     </section>
