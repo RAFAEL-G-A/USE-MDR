@@ -6,18 +6,18 @@ const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-brand-border/40 bg-[#35151f] px-5 pb-32 pt-12 text-center text-white md:px-8 md:pb-12 md:pt-14">
+    <footer className="border-t border-brand-border/70 bg-background px-5 pb-28 pt-8 text-center text-foreground md:px-8 md:pb-8 md:pt-8">
       <div className="mx-auto max-w-4xl">
-        <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.3em] text-[#ffabc5]">
+        <p className="text-[0.62rem] font-extrabold uppercase tracking-[0.28em] text-brand">
           Acompanhe a USE MDR
         </p>
-        <div className="mt-5 flex justify-center gap-3">
+        <div className="mt-3 flex justify-center gap-2.5">
           <a
             href={instagramUrl}
             target="_blank"
             rel="noreferrer"
             aria-label="Abrir Instagram da USE MDR"
-            className="flex size-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:border-[#ffabc5] hover:bg-[#ffabc5] hover:text-[#35151f]"
+            className="flex size-10 items-center justify-center rounded-full border border-brand-border bg-brand-soft text-brand transition-colors hover:border-brand hover:bg-brand hover:text-white"
           >
             <InstagramIcon className="size-5" />
           </a>
@@ -26,17 +26,16 @@ export function SiteFooter() {
             target="_blank"
             rel="noreferrer"
             aria-label="Conversar com a USE MDR pelo WhatsApp"
-            className="flex size-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:border-[#ffabc5] hover:bg-[#ffabc5] hover:text-[#35151f]"
+            className="flex size-10 items-center justify-center rounded-full border border-brand-border bg-brand-soft text-brand transition-colors hover:border-brand hover:bg-brand hover:text-white"
           >
             <WhatsAppIcon className="size-5" />
           </a>
         </div>
-        <div className="mx-auto mt-7 h-px max-w-sm bg-white/10" />
-        <address className="mx-auto mt-6 flex max-w-xl items-start justify-center gap-2 text-xs not-italic leading-6 text-white/75 sm:text-sm">
-          <MapPinIcon className="mt-1 size-4 shrink-0 text-[#ffabc5]" />
+        <address className="mx-auto mt-4 flex max-w-xl items-start justify-center gap-2 text-xs not-italic leading-5 text-muted sm:text-sm">
+          <MapPinIcon className="mt-0.5 size-4 shrink-0 text-brand" />
           <span>Rua Padre Cícero, 180A, Santa Cruz da Baixa Verde, Pernambuco, Brasil, 56895-000</span>
         </address>
-        <p className="mt-6 text-[0.62rem] uppercase tracking-[0.18em] text-white/40">
+        <p className="mt-3 text-[0.58rem] uppercase tracking-[0.16em] text-muted/70">
           © {new Date().getFullYear()} USE MDR. Todos os direitos reservados.
         </p>
       </div>
