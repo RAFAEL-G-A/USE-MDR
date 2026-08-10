@@ -13,7 +13,7 @@ export default function AdminProductsPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#ffeaf1_0,transparent_32rem)]">
       <header className="border-b border-white/10 bg-[linear-gradient(135deg,#4a1728_0%,#76213e_52%,#a62f59_100%)] text-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-5 px-5 py-4 md:px-8">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-5 px-5 py-3 md:px-8">
           <Brand />
           <Link
             href="/catalogo"
