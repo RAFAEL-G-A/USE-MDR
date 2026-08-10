@@ -203,6 +203,7 @@ export function AdminProductForm() {
     const subcategory = String(formData.get("subcategory") ?? "");
     const description = String(formData.get("description") ?? "").trim();
     const stock = Number(formData.get("stock"));
+    const isLaunch = formData.get("is_launch") === "on";
 
     if (!name || !Number.isFinite(price) || price <= 0) {
       setFeedback({ type: "error", message: "Informe um nome e um preço válido." });
@@ -222,6 +223,7 @@ export function AdminProductForm() {
     requestData.set("subcategory", subcategory);
     requestData.set("description", description);
     requestData.set("stock", String(stock));
+    requestData.set("is_launch", String(isLaunch));
     requestData.set("image", imageFile);
     const { error: createError } = await supabase.functions.invoke("create-product", {
       body: requestData,
@@ -418,6 +420,19 @@ export function AdminProductForm() {
           <FormField label="Descrição" htmlFor="product-description">
             <textarea id="product-description" name="description" rows={5} maxLength={1000} className="form-control resize-y" placeholder="Descreva os benefícios, acabamento, conteúdo e diferenciais do produto." />
           </FormField>
+
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-[1.25rem] border border-brand-border bg-brand-soft/45 px-4 py-4">
+            <span>
+              <span className="block text-sm font-extrabold text-foreground">Exibir em Lançamentos</span>
+              <span className="mt-1 block text-xs leading-5 text-muted">Mostra este produto na seção Lançamentos da página inicial.</span>
+            </span>
+            <input
+              name="is_launch"
+              type="checkbox"
+              defaultChecked
+              className="size-5 shrink-0 accent-brand"
+            />
+          </label>
         </div>
 
         <div>

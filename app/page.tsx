@@ -12,7 +12,9 @@ import { Brand } from "@/components/brand";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
 import { demoProducts } from "@/lib/demo-products";
-import { getLatestProducts } from "@/lib/products";
+import { getLaunchProducts } from "@/lib/products";
+
+export const dynamic = "force-dynamic";
 
 const categories = [
   { name: "Lábios", image: labiosImage },
@@ -25,7 +27,7 @@ const categories = [
 ];
 
 export default async function Home() {
-  const supabaseProducts = await getLatestProducts();
+  const supabaseProducts = await getLaunchProducts();
   const products: ProductCardItem[] = supabaseProducts.length
     ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, price: product.price, image: product.imageUrl }))
     : demoProducts;

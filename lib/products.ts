@@ -10,6 +10,7 @@ type ProductRow = {
   image_url: string | null;
   description: string | null;
   stock: number;
+  is_launch: boolean;
   created_at: string;
 };
 
@@ -33,7 +34,7 @@ export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, name, price, category, subcategory, image_url, description, stock, created_at")
+    .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
     .gt("stock", 0)
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -41,6 +42,42 @@ export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
 
   if (error) {
     console.warn("Não foi possível carregar os produtos do Supabase; usando o catálogo demonstrativo:", error.message);
+    return [];
+  }
+
+  return data
+    .filter((product) => product.image_url)
+    .map((product) => ({
+      id: String(product.id),
+      name: product.name,
+      price: Number(product.price),
+      category: product.category,
+      subcategory: product.subcategory,
+      imageUrl: product.image_url as string,
+      description: product.description,
+      stock: product.stock,
+    }))
+    .filter((product) => Number.isFinite(product.price));
+}
+
+export async function getLaunchProducts(limit = 4): Promise<CatalogProduct[]> {
+  const supabase = createSupabaseServerClient();
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
+    .eq("is_launch", true)
+    .gt("stock", 0)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+    .returns<ProductRow[]>();
+
+  if (error) {
+    console.warn("Não foi possível carregar os lançamentos do Supabase:", error.message);
     return [];
   }
 
@@ -79,7 +116,7 @@ export async function getProductById(id: string): Promise<CatalogProduct | null>
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, name, price, category, subcategory, image_url, description, stock, created_at")
+    .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
     .eq("id", id)
     .limit(1)
     .returns<ProductRow[]>();

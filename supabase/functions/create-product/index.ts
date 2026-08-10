@@ -44,6 +44,7 @@ Deno.serve(async (request) => {
     const description = readText(formData, "description");
     const price = Number(readText(formData, "price"));
     const stock = Number(readText(formData, "stock"));
+    const isLaunch = readText(formData, "is_launch") === "true";
     const image = formData.get("image");
 
     if (!name || name.length > 120) {
@@ -88,8 +89,9 @@ Deno.serve(async (request) => {
         image_url: publicImage.publicUrl,
         description: description || null,
         stock,
+        is_launch: isLaunch,
       })
-      .select("id, name, price, category, subcategory, image_url, description, stock, created_at")
+      .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
       .single();
 
     if (insertError) {
