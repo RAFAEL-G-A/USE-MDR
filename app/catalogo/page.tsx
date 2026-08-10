@@ -60,11 +60,11 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="min-h-screen pb-28 md:pb-0">
-      <header className="border-b border-white/10 bg-[linear-gradient(135deg,#4a1728_0%,#76213e_52%,#a62f59_100%)] text-white">
+      <header className="border-b border-brand-border/70 bg-background text-foreground">
         <div className="relative mx-auto flex max-w-7xl flex-col items-center justify-center px-5 py-3 md:px-8 md:py-4">
           <Link href="/" aria-label="Voltar para a página inicial" className="absolute left-5 flex size-10 items-center justify-center rounded-full border border-brand-border bg-white text-foreground md:hidden"><ArrowLeftIcon className="size-5" /></Link>
           <Brand />
-          <nav className="mt-2 hidden items-center gap-8 border-t border-white/15 px-8 pt-2 text-sm font-semibold text-white/80 md:flex" aria-label="Navegação principal"><Link href="/">Início</Link><Link href="/catalogo" className="text-[#ffabc5]">Buscar</Link><Link href="/favoritos">Favoritos</Link><Link href="/carrinho">Carrinho</Link></nav>
+          <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal"><Link href="/">Início</Link><Link href="/catalogo" className="text-brand">Buscar</Link><Link href="/favoritos">Favoritos</Link><Link href="/carrinho">Carrinho</Link></nav>
         </div>
       </header>
 
