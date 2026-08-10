@@ -11,6 +11,9 @@ Loja virtual responsiva da USE MDR, desenvolvida para navegação principalmente
 
 - catálogo conectado ao Supabase;
 - carrossel da página inicial com até quatro campanhas administráveis;
+- painel administrativo separado em estoque, destaques e rendimentos;
+- edição completa dos produtos com limpeza automática das imagens substituídas;
+- fluxo de caixa com vendas recebidas/a receber, gráficos e filtros por período;
 - categorias, subcategorias e busca;
 - páginas individuais de produtos;
 - favoritos sem login;
@@ -82,9 +85,15 @@ O arquivo `.env.local` é ignorado pelo Git e não deve ser enviado ao repositó
 
 ## Área administrativa
 
-A página `/admin/produtos` permite cadastrar produtos, enviar imagens e gerenciar
-os quatro slides do carrossel pelo celular ou computador. O acesso utiliza uma
-conta do Supabase Auth e as operações são protegidas por Row Level Security.
+O acesso antigo em `/admin/produtos` redireciona para o novo painel, dividido em:
+
+- `/admin/estoque`: cadastro e edição de produtos, imagens, descrições, preços e quantidades;
+- `/admin/destaques`: gerenciamento dos quatro slides do carrossel;
+- `/admin/rendimentos`: registro de vendas, recebimentos, gráfico e relatório por período.
+
+Ao registrar uma venda, as unidades são retiradas do estoque. O cancelamento
+devolve as unidades, e uma venda marcada como “a receber” pode ser baixada depois.
+O acesso utiliza Supabase Auth, código por e-mail e APIs protegidas no servidor.
 
 Para preparar o Supabase:
 
@@ -94,7 +103,7 @@ Para preparar o Supabase:
 4. execute o arquivo no **SQL Editor** do Supabase;
 5. configure os Secrets indicados em `supabase/functions/.env.example`;
 6. publique as funções `request-admin-code`, `verify-admin-code`,
-   `create-product` e `manage-hero-slide`;
+   `create-product`, `manage-product`, `manage-hero-slide` e `manage-sales`;
 7. saia e entre novamente na área administrativa para atualizar a sessão.
 
 ### API de cadastro
@@ -108,6 +117,12 @@ removido automaticamente.
 A Edge Function `manage-hero-slide` atualiza uma das quatro posições do
 carrossel, substitui ou remove sua imagem e salva os três textos da campanha.
 Somente registros que possuem imagem são retornados para a página inicial.
+
+A Edge Function `manage-product` edita e exclui produtos. Quando uma foto é
+substituída ou o produto é apagado, o arquivo antigo também é removido do Storage.
+
+A Edge Function `manage-sales` registra vendas e consulta o caixa. As funções SQL
+fazem a baixa e a devolução do estoque na mesma transação da movimentação.
 
 ## Verificações
 

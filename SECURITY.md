@@ -35,10 +35,12 @@ Depois da confirmação, a autorização dura 30 minutos e é vinculada ao
 
 As políticas RLS exigem o papel administrativo, a sessão verificada e uma
 autorização ainda válida. A mesma regra protege a tabela `products` e as
-operações de catálogo e carrossel no bucket `products`.
+operações de catálogo e carrossel no bucket `products`. A tabela financeira
+`sales` não permite leitura nem gravação direta por visitantes ou usuários
+autenticados; somente as funções administrativas podem acessá-la.
 
 O navegador não grava diretamente no banco. O formulário chama apenas a Edge
-Functions `create-product` e `manage-hero-slide`, que repetem as verificações
+Functions `create-product`, `manage-product`, `manage-hero-slide` e `manage-sales`, que repetem as verificações
 administrativas no servidor, validam os campos e coordenam uploads e gravações.
 Assim, uma operação não fica parcialmente concluída quando o banco rejeita os
 dados.
@@ -53,6 +55,8 @@ GitHub ou em variáveis `NEXT_PUBLIC_*`.
 - Supabase Auth: primeira camada e gerenciamento da sessão;
 - Supabase Edge Functions: geração, envio e verificação do código;
 - API `create-product`: cadastro coordenado do produto e da imagem;
+- API `manage-product`: edição, exclusão e limpeza das imagens antigas;
 - API `manage-hero-slide`: gerenciamento dos destaques da página inicial;
+- API `manage-sales`: fluxo de vendas, recebimentos e cancelamentos transacionais;
 - Resend: entrega do e-mail transacional;
 - Supabase RLS: decisão final de autorização para banco e Storage.

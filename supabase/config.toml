@@ -9,3 +9,9 @@ verify_jwt = false
 
 [functions.manage-hero-slide]
 verify_jwt = false
+
+[functions.manage-product]
+verify_jwt = false
+
+[functions.manage-sales]
+verify_jwt = false
