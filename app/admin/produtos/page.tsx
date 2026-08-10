@@ -4,8 +4,8 @@ import { AdminProductForm } from "@/components/admin-product-form";
 import { Brand } from "@/components/brand";
 
 export const metadata: Metadata = {
-  title: "Cadastro de produtos | USE MDR Beauty",
-  description: "Área administrativa do catálogo USE MDR Beauty.",
+  title: "Gerenciar catálogo | USE MDR",
+  description: "Área administrativa de produtos e destaques da USE MDR.",
   robots: { index: false, follow: false },
 };
 

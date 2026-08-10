@@ -34,13 +34,14 @@ Depois da confirmação, a autorização dura 30 minutos e é vinculada ao
 ## Proteção da API e do Storage
 
 As políticas RLS exigem o papel administrativo, a sessão verificada e uma
-autorização ainda válida. A mesma regra protege a tabela `products` e a pasta
-`catalog` do bucket `products`.
+autorização ainda válida. A mesma regra protege a tabela `products` e as
+operações de catálogo e carrossel no bucket `products`.
 
 O navegador não grava diretamente no banco. O formulário chama apenas a Edge
-Function `create-product`, que repete as verificações administrativas no
-servidor, valida os campos e coordena o upload e a inserção. Assim, a operação
-não fica parcialmente concluída quando o banco rejeita um produto.
+Functions `create-product` e `manage-hero-slide`, que repetem as verificações
+administrativas no servidor, validam os campos e coordenam uploads e gravações.
+Assim, uma operação não fica parcialmente concluída quando o banco rejeita os
+dados.
 
 A chave pública do Supabase pode aparecer no navegador; ela não concede
 privilégios administrativos. Chaves secretas, credenciais de e-mail e o
@@ -52,5 +53,6 @@ GitHub ou em variáveis `NEXT_PUBLIC_*`.
 - Supabase Auth: primeira camada e gerenciamento da sessão;
 - Supabase Edge Functions: geração, envio e verificação do código;
 - API `create-product`: cadastro coordenado do produto e da imagem;
+- API `manage-hero-slide`: gerenciamento dos destaques da página inicial;
 - Resend: entrega do e-mail transacional;
 - Supabase RLS: decisão final de autorização para banco e Storage.

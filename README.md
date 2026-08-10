@@ -10,6 +10,7 @@ Loja virtual responsiva da USE MDR, desenvolvida para navegação principalmente
 ## Recursos
 
 - catálogo conectado ao Supabase;
+- carrossel da página inicial com até quatro campanhas administráveis;
 - categorias, subcategorias e busca;
 - páginas individuais de produtos;
 - favoritos sem login;
@@ -38,9 +39,9 @@ flowchart LR
   C --> D[E-mail da administradora]
   D --> E[Edge Function verifica código]
   E --> F[Autorização temporária vinculada à sessão]
-  F --> G[API create-product]
-  G --> J[Valida categoria, imagem e dados]
-  J --> K[Storage e tabela products]
+  F --> G[APIs administrativas]
+  G --> J[Validação de imagens e dados]
+  J --> K[Storage e tabelas protegidas]
   H[Clientes] --> I[Leitura pública do catálogo]
 ```
 
@@ -81,9 +82,9 @@ O arquivo `.env.local` é ignorado pelo Git e não deve ser enviado ao repositó
 
 ## Área administrativa
 
-A página `/admin/produtos` permite cadastrar produtos e enviar imagens pelo
-celular ou computador. O acesso utiliza uma conta do Supabase Auth e as
-operações são protegidas por Row Level Security.
+A página `/admin/produtos` permite cadastrar produtos, enviar imagens e gerenciar
+os quatro slides do carrossel pelo celular ou computador. O acesso utiliza uma
+conta do Supabase Auth e as operações são protegidas por Row Level Security.
 
 Para preparar o Supabase:
 
@@ -92,8 +93,8 @@ Para preparar o Supabase:
 3. substitua `ADMIN_EMAIL_AQUI` pelo e-mail da conta;
 4. execute o arquivo no **SQL Editor** do Supabase;
 5. configure os Secrets indicados em `supabase/functions/.env.example`;
-6. publique as funções `request-admin-code`, `verify-admin-code` e
-   `create-product`;
+6. publique as funções `request-admin-code`, `verify-admin-code`,
+   `create-product` e `manage-hero-slide`;
 7. saia e entre novamente na área administrativa para atualizar a sessão.
 
 ### API de cadastro
@@ -103,6 +104,10 @@ A Edge Function `create-product` recebe uma única requisição autenticada em
 estoque e imagem. Ela valida a taxonomia, envia a foto ao bucket `products` e
 insere o registro na tabela `products`. Se a inserção falhar, o upload é
 removido automaticamente.
+
+A Edge Function `manage-hero-slide` atualiza uma das quatro posições do
+carrossel, substitui ou remove sua imagem e salva os três textos da campanha.
+Somente registros que possuem imagem são retornados para a página inicial.
 
 ## Verificações
 
