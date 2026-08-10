@@ -1,31 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import labiosImage from "@/public/images/categories/labios.png";
-import olhosImage from "@/public/images/categories/olhos.png";
-import peleImage from "@/public/images/categories/pele.png";
-import skincareImage from "@/public/images/categories/skincare.png";
-import pinceisImage from "@/public/images/categories/pinceis.png";
-import kitsImage from "@/public/images/categories/kits.png";
-import acessoriosImage from "@/public/images/categories/acessorios.png";
 import { Brand } from "@/components/brand";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
 import { demoProducts } from "@/lib/demo-products";
+import { getCategoryVisuals } from "@/lib/category-images";
 import { getHeroSlides } from "@/lib/hero-slides";
 import { getLaunchProducts } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
-
-const categories = [
-  { name: "Lábios", image: labiosImage },
-  { name: "Olhos", image: olhosImage },
-  { name: "Pele", image: peleImage },
-  { name: "Skincare", image: skincareImage },
-  { name: "Pincéis", image: pinceisImage },
-  { name: "Kits", image: kitsImage },
-  { name: "Acessórios", image: acessoriosImage },
-];
 
 function launchGridLayout(productCount: number) {
   if (productCount === 1) return "grid-cols-1 max-w-sm";
@@ -37,9 +21,10 @@ function launchGridLayout(productCount: number) {
 }
 
 export default async function Home() {
-  const [supabaseProducts, heroSlides] = await Promise.all([
+  const [supabaseProducts, heroSlides, categories] = await Promise.all([
     getLaunchProducts(6),
     getHeroSlides(),
+    getCategoryVisuals(),
   ]);
   const products: ProductCardItem[] = supabaseProducts.length
     ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, price: product.price, image: product.imageUrl }))

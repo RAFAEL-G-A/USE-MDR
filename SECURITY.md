@@ -40,7 +40,7 @@ operações de catálogo e carrossel no bucket `products`. A tabela financeira
 autenticados; somente as funções administrativas podem acessá-la.
 
 O navegador não grava diretamente no banco. O formulário chama apenas a Edge
-Functions `create-product`, `manage-product`, `manage-hero-slide` e `manage-sales`, que repetem as verificações
+Functions `create-product`, `manage-product`, `manage-hero-slide`, `manage-category-image` e `manage-sales`, que repetem as verificações
 administrativas no servidor, validam os campos e coordenam uploads e gravações.
 Assim, uma operação não fica parcialmente concluída quando o banco rejeita os
 dados.
@@ -57,6 +57,7 @@ GitHub ou em variáveis `NEXT_PUBLIC_*`.
 - API `create-product`: cadastro coordenado do produto e da imagem;
 - API `manage-product`: edição, exclusão e limpeza das imagens antigas;
 - API `manage-hero-slide`: gerenciamento dos destaques da página inicial;
+- API `manage-category-image`: substituição e limpeza das imagens de categorias;
 - API `manage-sales`: fluxo de vendas, recebimentos e cancelamentos transacionais;
 - Resend: entrega do e-mail transacional;
 - Supabase RLS: decisão final de autorização para banco e Storage.

@@ -11,6 +11,7 @@ Loja virtual responsiva da USE MDR, desenvolvida para navegação principalmente
 
 - catálogo conectado ao Supabase;
 - carrossel da página inicial com até quatro campanhas administráveis;
+- imagens das categorias administráveis, com restauração dos visuais padrão;
 - painel administrativo separado em estoque, destaques e rendimentos;
 - edição completa dos produtos com limpeza automática das imagens substituídas;
 - fluxo de caixa com vendas recebidas/a receber, gráficos e filtros por período;
@@ -88,7 +89,7 @@ O arquivo `.env.local` é ignorado pelo Git e não deve ser enviado ao repositó
 O acesso antigo em `/admin/produtos` redireciona para o novo painel, dividido em:
 
 - `/admin/estoque`: cadastro e edição de produtos, imagens, descrições, preços e quantidades;
-- `/admin/destaques`: gerenciamento dos quatro slides do carrossel;
+- `/admin/destaques`: gerenciamento dos quatro slides do carrossel e das imagens de categorias;
 - `/admin/rendimentos`: registro de vendas, recebimentos, gráfico e relatório por período.
 
 Ao registrar uma venda, as unidades são retiradas do estoque. O cancelamento
@@ -103,7 +104,7 @@ Para preparar o Supabase:
 4. execute o arquivo no **SQL Editor** do Supabase;
 5. configure os Secrets indicados em `supabase/functions/.env.example`;
 6. publique as funções `request-admin-code`, `verify-admin-code`,
-   `create-product`, `manage-product`, `manage-hero-slide` e `manage-sales`;
+   `create-product`, `manage-product`, `manage-hero-slide`, `manage-category-image` e `manage-sales`;
 7. saia e entre novamente na área administrativa para atualizar a sessão.
 
 ### API de cadastro
@@ -120,6 +121,9 @@ Somente registros que possuem imagem são retornados para a página inicial.
 
 A Edge Function `manage-product` edita e exclui produtos. Quando uma foto é
 substituída ou o produto é apagado, o arquivo antigo também é removido do Storage.
+
+A Edge Function `manage-category-image` substitui as imagens das sete categorias,
+remove o arquivo anterior e permite restaurar os visuais padrão do projeto.
 
 A Edge Function `manage-sales` registra vendas e consulta o caixa. As funções SQL
 fazem a baixa e a devolução do estoque na mesma transação da movimentação.

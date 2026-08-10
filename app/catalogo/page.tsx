@@ -1,33 +1,15 @@
 import type { Metadata } from "next";
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
-import labiosImage from "@/public/images/categories/labios.png";
-import olhosImage from "@/public/images/categories/olhos.png";
-import peleImage from "@/public/images/categories/pele.png";
-import skincareImage from "@/public/images/categories/skincare.png";
-import pinceisImage from "@/public/images/categories/pinceis.png";
-import kitsImage from "@/public/images/categories/kits.png";
-import acessoriosImage from "@/public/images/categories/acessorios.png";
 import { Brand } from "@/components/brand";
 import { ArrowLeftIcon, SearchIcon } from "@/components/icons";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
+import { getCategoryVisuals } from "@/lib/category-images";
 import { demoProducts } from "@/lib/demo-products";
 import { getLatestProducts } from "@/lib/products";
 
 export const metadata: Metadata = { title: "Catálogo | USE MDR Beauty", description: "Explore as categorias e encontre seus produtos favoritos na USE MDR Beauty." };
-
-type Category = { name: string; description: string; image: StaticImageData };
-
-const categories: Category[] = [
-  { name: "Lábios", description: "Cor, brilho e cuidado", image: labiosImage },
-  { name: "Olhos", description: "Destaque seu olhar", image: olhosImage },
-  { name: "Pele", description: "Uma pele impecável", image: peleImage },
-  { name: "Skincare", description: "Sua rotina de cuidado", image: skincareImage },
-  { name: "Pincéis", description: "Acabamento profissional", image: pinceisImage },
-  { name: "Kits", description: "Combinações especiais", image: kitsImage },
-  { name: "Acessórios", description: "Detalhes que completam", image: acessoriosImage },
-];
 
 const subcategories: Record<string, string[]> = {
   "Lábios": ["Gloss", "Batons", "Lip Tint", "Balm", "Lápis Labial"],
@@ -47,7 +29,10 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
   const query = firstValue(params.q);
   const selectedCategory = firstValue(params.categoria);
   const selectedSubcategory = firstValue(params.subcategoria);
-  const supabaseProducts = await getLatestProducts(60);
+  const [supabaseProducts, categories] = await Promise.all([
+    getLatestProducts(60),
+    getCategoryVisuals(),
+  ]);
   const allProducts: ProductCardItem[] = supabaseProducts.length
     ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, subcategory: product.subcategory, price: product.price, image: product.imageUrl }))
     : demoProducts;
