@@ -27,6 +27,15 @@ const categories = [
   { name: "Acessórios", image: acessoriosImage },
 ];
 
+function launchGridLayout(productCount: number) {
+  if (productCount === 1) return "grid-cols-1 max-w-sm";
+  if (productCount === 2) return "grid-cols-2 max-w-2xl";
+  if (productCount === 3) return "grid-cols-2 max-w-4xl sm:grid-cols-3";
+  if (productCount === 4) return "grid-cols-2 lg:grid-cols-4";
+  if (productCount === 5) return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
+  return "grid-cols-2 lg:grid-cols-3 xl:grid-cols-6";
+}
+
 export default async function Home() {
   const [supabaseProducts, heroSlides] = await Promise.all([
     getLaunchProducts(6),
@@ -35,6 +44,7 @@ export default async function Home() {
   const products: ProductCardItem[] = supabaseProducts.length
     ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, price: product.price, image: product.imageUrl }))
     : demoProducts;
+  const launchGridClassName = launchGridLayout(products.length);
 
   return (
     <div id="inicio" className="min-h-screen pb-28 md:pb-0">
@@ -77,7 +87,7 @@ export default async function Home() {
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">ACABOU DE CHEGAR</p><h2 id="new-products-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">Lançamentos</h2></div>
             <Link href="/catalogo#produtos" className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todos →</Link>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-6 lg:grid-cols-3 xl:grid-cols-6">
+          <div className={`mx-auto grid gap-x-3 gap-y-8 sm:gap-6 ${launchGridClassName}`}>
             {products.map((product) => <ProductCard key={product.id} product={product} showNew />)}
           </div>
         </section>
