@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 export default function AdminProductsPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#ffeaf1_0,transparent_32rem)]">
-      <header className="border-b border-brand-border/70 bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex min-h-24 max-w-5xl items-center justify-between gap-5 px-5 md:px-8">
+      <header className="border-b border-brand-border/70 bg-[linear-gradient(180deg,#fff4f8_0%,#ffe7ef_100%)]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-5 px-5 py-4 md:px-8">
           <Brand />
           <Link
             href="/catalogo"

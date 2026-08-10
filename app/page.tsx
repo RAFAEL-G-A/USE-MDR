@@ -34,10 +34,10 @@ export default async function Home() {
 
   return (
     <div id="inicio" className="min-h-screen pb-28 md:pb-0">
-      <header className="border-b border-brand-border/70 bg-background/95 backdrop-blur-md">
-        <div className="mx-auto flex min-h-28 max-w-7xl items-center justify-center px-5 md:justify-between md:px-8">
+      <header className="border-b border-brand-border/70 bg-[linear-gradient(180deg,#fff4f8_0%,#ffe7ef_100%)]">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 py-4 md:px-8 md:py-5">
           <Brand />
-          <nav className="hidden items-center gap-8 text-sm font-semibold md:flex" aria-label="Navegação principal">
+          <nav className="mt-3 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-3 text-sm font-semibold md:flex" aria-label="Navegação principal">
             <Link href="/" className="text-brand">Início</Link>
             <Link href="/catalogo" className="transition-colors hover:text-brand">Buscar</Link>
             <Link href="/favoritos" className="transition-colors hover:text-brand">Favoritos</Link>

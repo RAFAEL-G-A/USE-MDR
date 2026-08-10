@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bodoni_Moda, Manrope } from "next/font/google";
 import { CartProvider } from "@/components/cart-provider";
 import { FavoritesProvider } from "@/components/favorites-provider";
+import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -23,7 +24,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${manrope.variable} ${bodoniModa.variable}`}>
-      <body><CartProvider><FavoritesProvider>{children}</FavoritesProvider></CartProvider></body>
+      <body>
+        <CartProvider>
+          <FavoritesProvider>
+            <div className="flex min-h-screen flex-col">
+              <div className="flex-1">{children}</div>
+              <SiteFooter />
+            </div>
+          </FavoritesProvider>
+        </CartProvider>
+      </body>
     </html>
   );
 }

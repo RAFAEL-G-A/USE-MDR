@@ -1,14 +1,21 @@
+import Image from "next/image";
 import Link from "next/link";
+import useMdrLogo from "@/public/images/brand/use-mdr-logo.png";
 
 export function Brand() {
   return (
-    <Link href="/" className="inline-flex flex-col items-center" aria-label="USE MDR Beauty - início">
-      <span className="font-serif text-[2rem] leading-none tracking-[-0.06em] text-brand sm:text-[2.35rem]">USE MDR</span>
-      <span className="mt-1 flex items-center gap-2 text-[0.58rem] font-bold tracking-[0.48em] text-brand sm:text-[0.64rem]">
-        <span className="h-px w-8 bg-brand/70" aria-hidden="true" />
-        BEAUTY
-        <span className="h-px w-8 bg-brand/70" aria-hidden="true" />
-      </span>
+    <Link
+      href="/"
+      className="block w-[13.5rem] sm:w-[15.5rem]"
+      aria-label="USE MDR - início"
+    >
+      <Image
+        src={useMdrLogo}
+        alt="USE MDR - Maquiagens e acessórios"
+        preload
+        sizes="(max-width: 640px) 216px, 248px"
+        className="h-auto w-full drop-shadow-[0_8px_18px_rgba(233,30,99,0.14)]"
+      />
     </Link>
   );
 }
