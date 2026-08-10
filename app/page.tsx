@@ -34,14 +34,14 @@ export default async function Home() {
 
   return (
     <div id="inicio" className="min-h-screen pb-28 md:pb-0">
-      <header className="border-b border-brand-border/70 bg-[linear-gradient(180deg,#fff4f8_0%,#ffe7ef_100%)]">
+      <header className="border-b border-white/10 bg-[linear-gradient(135deg,#4a1728_0%,#76213e_52%,#a62f59_100%)] text-white">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 py-4 md:px-8 md:py-5">
           <Brand />
-          <nav className="mt-3 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-3 text-sm font-semibold md:flex" aria-label="Navegação principal">
-            <Link href="/" className="text-brand">Início</Link>
-            <Link href="/catalogo" className="transition-colors hover:text-brand">Buscar</Link>
-            <Link href="/favoritos" className="transition-colors hover:text-brand">Favoritos</Link>
-            <Link href="/carrinho" className="transition-colors hover:text-brand">Carrinho</Link>
+          <nav className="mt-3 hidden items-center gap-8 border-t border-white/15 px-8 pt-3 text-sm font-semibold text-white/80 md:flex" aria-label="Navegação principal">
+            <Link href="/" className="text-[#ffabc5]">Início</Link>
+            <Link href="/catalogo" className="transition-colors hover:text-[#ffabc5]">Buscar</Link>
+            <Link href="/favoritos" className="transition-colors hover:text-[#ffabc5]">Favoritos</Link>
+            <Link href="/carrinho" className="transition-colors hover:text-[#ffabc5]">Carrinho</Link>
           </nav>
         </div>
       </header>
