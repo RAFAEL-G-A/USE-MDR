@@ -30,11 +30,11 @@ export default function AdminProductsPage() {
             ÁREA ADMINISTRATIVA
           </p>
           <h1 className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">
-            Cadastro de produtos
+            Gerenciar catálogo
           </h1>
           <p className="mt-4 text-sm leading-6 text-muted sm:text-base">
-            Adicione os produtos e suas imagens diretamente ao catálogo da USE
-            MDR Beauty.
+            Atualize o carrossel da página inicial e adicione produtos diretamente
+            ao catálogo da USE MDR.
           </p>
         </div>
 

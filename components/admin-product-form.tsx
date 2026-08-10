@@ -9,6 +9,7 @@ import {
   type CatalogCategory,
 } from "@/lib/catalog-taxonomy";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { AdminHeroSlides } from "@/components/admin-hero-slides";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -368,7 +369,9 @@ export function AdminProductForm() {
   }
 
   return (
-    <section className="rounded-[2rem] border border-brand-border bg-white p-5 shadow-soft sm:p-8">
+    <div className="space-y-8">
+      <AdminHeroSlides />
+      <section className="rounded-[2rem] border border-brand-border bg-white p-5 shadow-soft sm:p-8">
       <div className="mb-7 flex flex-wrap items-center justify-between gap-4 border-b border-brand-border/70 pb-5">
         <div>
           <p className="text-xs font-bold text-brand">Acesso autorizado</p>
@@ -470,7 +473,8 @@ export function AdminProductForm() {
           </button>
         </div>
       </form>
-    </section>
+      </section>
+    </div>
   );
 }
 

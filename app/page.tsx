@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import heroBeautyImage from "@/public/images/hero-usemdr-beauty-ai.png";
 import labiosImage from "@/public/images/categories/labios.png";
 import olhosImage from "@/public/images/categories/olhos.png";
 import peleImage from "@/public/images/categories/pele.png";
@@ -9,9 +8,11 @@ import pinceisImage from "@/public/images/categories/pinceis.png";
 import kitsImage from "@/public/images/categories/kits.png";
 import acessoriosImage from "@/public/images/categories/acessorios.png";
 import { Brand } from "@/components/brand";
+import { HeroCarousel } from "@/components/hero-carousel";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
 import { demoProducts } from "@/lib/demo-products";
+import { getHeroSlides } from "@/lib/hero-slides";
 import { getLaunchProducts } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,10 @@ const categories = [
 ];
 
 export default async function Home() {
-  const supabaseProducts = await getLaunchProducts();
+  const [supabaseProducts, heroSlides] = await Promise.all([
+    getLaunchProducts(),
+    getHeroSlides(),
+  ]);
   const products: ProductCardItem[] = supabaseProducts.length
     ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, price: product.price, image: product.imageUrl }))
     : demoProducts;
@@ -47,20 +51,9 @@ export default async function Home() {
       </header>
 
       <main className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-12">
-        <section className="relative flex min-h-[35rem] items-end overflow-hidden rounded-[2rem] border border-brand-border bg-brand-soft p-7 shadow-soft sm:min-h-[38rem] sm:p-10 md:min-h-[30rem] md:items-center md:p-14">
-          <Image src={heroBeautyImage} alt="Modelo apresenta um gloss rosa em campanha de beleza da USE MDR" fill preload sizes="(max-width: 768px) calc(100vw - 2.5rem), 1216px" className="object-cover object-[58%_center] md:object-[66%_42%]" />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,234,241,0.98)_0%,rgba(255,225,235,0.9)_38%,rgba(255,218,229,0.28)_65%,rgba(255,218,229,0)_100%)]" aria-hidden="true" />
-          <div className="relative z-10 max-w-[68%] sm:max-w-md md:max-w-xl">
-            <p className="mb-4 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand sm:text-xs">✦ NOVIDADES</p>
-            <h1 className="font-serif text-[2.45rem] leading-[0.98] tracking-[-0.05em] text-foreground sm:text-6xl md:text-7xl">Beleza que combina com o seu jeito.</h1>
-            <p className="mt-5 max-w-xs text-xs leading-5 text-muted sm:text-base sm:leading-7">Maquiagem, skincare e acessórios selecionados para realçar o que há de mais bonito em você.</p>
-            <Link href="/catalogo#produtos" className="mt-7 inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-full bg-brand px-4 text-[0.62rem] font-extrabold tracking-wide text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand-strong sm:min-h-14 sm:px-7 sm:text-sm">
-              EXPLORAR NOVIDADES <span className="text-xl leading-none" aria-hidden="true">→</span>
-            </Link>
-          </div>
-        </section>
+        <HeroCarousel slides={heroSlides} />
 
-        <section className="pt-12 sm:pt-16" aria-labelledby="categories-title">
+        <section className={heroSlides.length ? "pt-12 sm:pt-16" : "pt-4 sm:pt-6"} aria-labelledby="categories-title">
           <div className="mb-6 flex items-end justify-between gap-5">
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">EXPLORE</p><h2 id="categories-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">Categorias</h2></div>
             <Link href="/catalogo" className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todas →</Link>

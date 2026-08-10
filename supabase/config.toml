@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.create-product]
 verify_jwt = false
+
+[functions.manage-hero-slide]
+verify_jwt = false
