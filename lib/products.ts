@@ -25,6 +25,14 @@ export type CatalogProduct = {
   stock: number;
 };
 
+function parseProductPrice(value: number | string) {
+  if (typeof value === "number") return value;
+  const normalized = value.includes(",")
+    ? value.replace(/\./g, "").replace(",", ".")
+    : value;
+  return Number(normalized);
+}
+
 export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
   const supabase = createSupabaseServerClient();
 
@@ -50,7 +58,7 @@ export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
     .map((product) => ({
       id: String(product.id),
       name: product.name,
-      price: Number(product.price),
+      price: parseProductPrice(product.price),
       category: product.category,
       subcategory: product.subcategory,
       imageUrl: product.image_url as string,
@@ -60,7 +68,7 @@ export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
     .filter((product) => Number.isFinite(product.price));
 }
 
-export async function getLaunchProducts(limit = 4): Promise<CatalogProduct[]> {
+export async function getLaunchProducts(limit = 6): Promise<CatalogProduct[]> {
   const supabase = createSupabaseServerClient();
 
   if (!supabase) {
@@ -86,7 +94,7 @@ export async function getLaunchProducts(limit = 4): Promise<CatalogProduct[]> {
     .map((product) => ({
       id: String(product.id),
       name: product.name,
-      price: Number(product.price),
+      price: parseProductPrice(product.price),
       category: product.category,
       subcategory: product.subcategory,
       imageUrl: product.image_url as string,
@@ -123,7 +131,7 @@ export async function getProductById(id: string): Promise<CatalogProduct | null>
 
   if (error || !data[0] || !data[0].image_url) return null;
   const product = data[0];
-  const price = Number(product.price);
+  const price = parseProductPrice(product.price);
   if (!Number.isFinite(price)) return null;
 
   return {

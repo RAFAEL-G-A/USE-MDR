@@ -29,7 +29,7 @@ const categories = [
 
 export default async function Home() {
   const [supabaseProducts, heroSlides] = await Promise.all([
-    getLaunchProducts(),
+    getLaunchProducts(6),
     getHeroSlides(),
   ]);
   const products: ProductCardItem[] = supabaseProducts.length
@@ -77,7 +77,7 @@ export default async function Home() {
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">ACABOU DE CHEGAR</p><h2 id="new-products-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">Lançamentos</h2></div>
             <Link href="/catalogo#produtos" className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todos →</Link>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-6 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-6 lg:grid-cols-3 xl:grid-cols-6">
             {products.map((product) => <ProductCard key={product.id} product={product} showNew />)}
           </div>
         </section>
