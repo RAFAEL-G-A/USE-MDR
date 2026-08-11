@@ -54,13 +54,13 @@ export default async function Home() {
             <Link href="/catalogo" className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todas →</Link>
           </div>
           <ul className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible md:px-0">
-            {categories.map(({ name, image }) => (
-              <li key={name} className="w-24 shrink-0 snap-start text-center md:w-auto">
-                <Link href={{ pathname: "/catalogo", query: { categoria: name } }} className="group block">
+            {categories.map((category) => (
+              <li key={category.key} className="w-24 shrink-0 snap-start text-center md:w-auto">
+                <Link href={{ pathname: "/catalogo", query: { categoria: category.filterCategory, ...(category.filterSubcategory ? { subcategoria: category.filterSubcategory } : {}) } }} className="group block">
                   <span className="relative mx-auto block aspect-square w-20 overflow-hidden rounded-full border border-brand-border bg-brand-soft shadow-sm sm:w-24 md:w-full md:max-w-28">
-                    <Image src={image} alt="" fill sizes="112px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <Image src={category.image} alt="" fill sizes="112px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
                   </span>
-                  <span className="mt-3 block text-xs font-semibold text-foreground group-hover:text-brand sm:text-sm">{name}</span>
+                  <span className="mt-3 block text-xs font-semibold text-foreground group-hover:text-brand sm:text-sm">{category.name}</span>
                 </Link>
               </li>
             ))}

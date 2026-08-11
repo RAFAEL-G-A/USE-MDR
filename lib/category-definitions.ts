@@ -12,14 +12,16 @@ export type CategoryDefinition = {
   name: string;
   description: string;
   image: StaticImageData;
+  filterCategory: string;
+  filterSubcategory?: string;
 };
 
 export const categoryDefinitions: CategoryDefinition[] = [
-  { key: "labios", name: "Lábios", description: "Cor, brilho e cuidado", image: labiosImage },
-  { key: "olhos", name: "Olhos", description: "Destaque seu olhar", image: olhosImage },
-  { key: "pele", name: "Pele", description: "Uma pele impecável", image: peleImage },
-  { key: "skincare", name: "Skincare", description: "Sua rotina de cuidado", image: skincareImage },
-  { key: "pinceis", name: "Pincéis", description: "Acabamento profissional", image: pinceisImage },
-  { key: "kits", name: "Kits", description: "Combinações especiais", image: kitsImage },
-  { key: "acessorios", name: "Acessórios", description: "Detalhes que completam", image: acessoriosImage },
+  { key: "labios", name: "Lábios", description: "Cor, brilho e cuidado", image: labiosImage, filterCategory: "Lábios" },
+  { key: "olhos", name: "Olhos", description: "Destaque seu olhar", image: olhosImage, filterCategory: "Olhos" },
+  { key: "pele", name: "Pele", description: "Uma pele impecável", image: peleImage, filterCategory: "Pele" },
+  { key: "skincare", name: "Skincare", description: "Sua rotina de cuidado", image: skincareImage, filterCategory: "Skincare" },
+  { key: "pinceis", name: "Pincéis", description: "Acabamento profissional", image: pinceisImage, filterCategory: "Pincéis" },
+  { key: "kits", name: "Paletas", description: "Cores para todos os looks", image: kitsImage, filterCategory: "Olhos", filterSubcategory: "Paletas" },
+  { key: "acessorios", name: "Acessórios", description: "Detalhes que completam", image: acessoriosImage, filterCategory: "Acessórios" },
 ];

@@ -12,6 +12,8 @@ export type CategoryVisual = {
   name: string;
   description: string;
   image: StaticImageData | string;
+  filterCategory: string;
+  filterSubcategory?: string;
 };
 
 export async function getCategoryVisuals(): Promise<CategoryVisual[]> {
