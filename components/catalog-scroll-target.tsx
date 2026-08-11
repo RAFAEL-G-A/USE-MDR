@@ -9,13 +9,18 @@ type CatalogScrollTargetProps = {
 
 export function CatalogScrollTarget({ navigationKey, targetId }: CatalogScrollTargetProps) {
   useEffect(() => {
-    if (window.location.hash !== `#${targetId}`) return;
-
-    const animationFrame = window.requestAnimationFrame(() => {
+    const scrollToTarget = () => {
+      if (window.location.hash !== `#${targetId}`) return;
       document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    };
 
-    return () => window.cancelAnimationFrame(animationFrame);
+    const scrollTimeout = window.setTimeout(scrollToTarget, 100);
+    window.addEventListener("hashchange", scrollToTarget);
+
+    return () => {
+      window.clearTimeout(scrollTimeout);
+      window.removeEventListener("hashchange", scrollToTarget);
+    };
   }, [navigationKey, targetId]);
 
   return null;
