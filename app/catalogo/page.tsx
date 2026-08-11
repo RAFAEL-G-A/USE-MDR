@@ -5,21 +5,14 @@ import { Brand } from "@/components/brand";
 import { ArrowLeftIcon, SearchIcon } from "@/components/icons";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
+import { catalogTaxonomy } from "@/lib/catalog-taxonomy";
 import { getCategoryVisuals } from "@/lib/category-images";
 import { demoProducts } from "@/lib/demo-products";
 import { getLatestProducts } from "@/lib/products";
 
 export const metadata: Metadata = { title: "Catálogo | USE MDR Beauty", description: "Explore as categorias e encontre seus produtos favoritos na USE MDR Beauty." };
 
-const subcategories: Record<string, string[]> = {
-  "Lábios": ["Gloss", "Batons", "Lip Tint", "Balm", "Lápis Labial"],
-  "Olhos": ["Paletas", "Sombras", "Máscara de Cílios", "Delineadores", "Lápis", "Sobrancelhas"],
-  "Pele": ["Bases", "Corretivos", "Pós", "Blush", "Iluminadores", "Contorno", "Primer"],
-  "Skincare": ["Séruns", "Hidratantes", "Esfoliantes", "Limpeza Facial", "Protetor Solar", "Máscaras"],
-  "Pincéis": ["Pincéis para Rosto", "Pincéis para Olhos", "Kits de Pincéis", "Esponjas"],
-  "Kits": ["Kits de Maquiagem", "Kits de Skincare", "Kits Presente"],
-  "Acessórios": ["Necessaires", "Espelhos", "Organizadores", "Aplicadores", "Óculos"],
-};
+const subcategories: Record<string, readonly string[]> = catalogTaxonomy;
 
 function firstValue(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
 function normalized(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim(); }

@@ -22,6 +22,6 @@ export const categoryDefinitions: CategoryDefinition[] = [
   { key: "pele", name: "Pele", description: "Uma pele impecável", image: peleImage, filterCategory: "Pele" },
   { key: "skincare", name: "Skincare", description: "Sua rotina de cuidado", image: skincareImage, filterCategory: "Skincare" },
   { key: "pinceis", name: "Pincéis", description: "Acabamento profissional", image: pinceisImage, filterCategory: "Pincéis" },
-  { key: "kits", name: "Paletas", description: "Cores para todos os looks", image: kitsImage, filterCategory: "Olhos", filterSubcategory: "Paletas" },
+  { key: "kits", name: "Paletas", description: "Cores para todos os looks", image: kitsImage, filterCategory: "Paletas" },
   { key: "acessorios", name: "Acessórios", description: "Detalhes que completam", image: acessoriosImage, filterCategory: "Acessórios" },
 ];

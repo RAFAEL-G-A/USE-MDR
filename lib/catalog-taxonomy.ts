@@ -1,7 +1,6 @@
 export const catalogTaxonomy = {
   "Lábios": ["Gloss", "Batons", "Lip Tint", "Balm", "Lápis Labial"],
   "Olhos": [
-    "Paletas",
     "Sombras",
     "Máscara de Cílios",
     "Delineadores",
@@ -31,7 +30,7 @@ export const catalogTaxonomy = {
     "Kits de Pincéis",
     "Esponjas",
   ],
-  "Kits": ["Kits de Maquiagem", "Kits de Skincare", "Kits Presente"],
+  "Paletas": ["Paletas de Sombras", "Paletas de Rosto", "Paletas Multifuncionais"],
   "Acessórios": [
     "Necessaires",
     "Espelhos",
