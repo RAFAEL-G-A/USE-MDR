@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
+import { CatalogScrollTarget } from "@/components/catalog-scroll-target";
 import { ArrowLeftIcon, SearchIcon } from "@/components/icons";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
@@ -66,6 +67,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         </section>
 
         <section id="produtos" className="scroll-mt-6 pt-16 sm:pt-20" aria-labelledby="products-title">
+          <CatalogScrollTarget navigationKey={`${query}|${selectedCategory}|${selectedSubcategory}`} targetId="produtos" />
           <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">ENCONTRE O SEU FAVORITO</p><h2 id="products-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">{selectedCategory || query ? "Resultados" : "Todos os produtos"}</h2></div>
             {(selectedCategory || selectedSubcategory || query) && <Link href="/catalogo#produtos" className="rounded-full border border-brand-border bg-white px-4 py-2 text-xs font-bold text-brand">Limpar filtros</Link>}
