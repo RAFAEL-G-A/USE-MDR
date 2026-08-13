@@ -1,4 +1,5 @@
-// @ts-expect-error `.open-next/worker.js` is generated during the Cloudflare build.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore `.open-next/worker.js` exists only after the Cloudflare build.
 import { default as handler } from "./.open-next/worker.js";
 
 type UseMdrWorkerEnv = CloudflareEnv & {
