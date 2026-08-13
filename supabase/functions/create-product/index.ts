@@ -43,6 +43,7 @@ Deno.serve(async (request) => {
     const subcategory = readText(formData, "subcategory");
     const description = readText(formData, "description");
     const price = Number(readText(formData, "price"));
+    const costPrice = Number(readText(formData, "cost_price") || "0");
     const stock = Number(readText(formData, "stock"));
     const isLaunch = readText(formData, "is_launch") === "true";
     const image = formData.get("image");
@@ -52,6 +53,9 @@ Deno.serve(async (request) => {
     }
     if (!Number.isFinite(price) || price <= 0) {
       return json(request, { error: "Informe um preço válido." }, 400);
+    }
+    if (!Number.isFinite(costPrice) || costPrice < 0) {
+      return json(request, { error: "Informe um preço de custo válido." }, 400);
     }
     if (!Number.isInteger(stock) || stock < 0) {
       return json(request, { error: "Informe um estoque inteiro igual ou maior que zero." }, 400);
@@ -99,7 +103,22 @@ Deno.serve(async (request) => {
       throw new Error(`Não foi possível salvar o produto: ${insertError.message}`);
     }
 
-    return json(request, { ok: true, product }, 201);
+    const { error: costError } = await context.adminClient
+      .from("product_costs")
+      .upsert({
+        product_id: String(product.id),
+        cost_price: costPrice,
+        updated_by: context.user.id,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (costError) {
+      await context.adminClient.from("products").delete().eq("id", product.id);
+      await context.adminClient.storage.from("products").remove([imagePath]);
+      throw new Error(`Não foi possível salvar o preço de custo: ${costError.message}`);
+    }
+
+    return json(request, { ok: true, product: { ...product, cost_price: costPrice } }, 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível cadastrar o produto.";
     return json(request, { error: message }, 401);

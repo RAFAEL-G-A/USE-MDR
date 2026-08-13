@@ -18,3 +18,9 @@ verify_jwt = false
 
 [functions.manage-category-image]
 verify_jwt = false
+
+[functions.manage-finances]
+verify_jwt = false
+
+[functions.run-financial-reports]
+verify_jwt = false

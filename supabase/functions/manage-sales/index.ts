@@ -22,7 +22,7 @@ Deno.serve(async (request) => {
       const to = String(body.to ?? "");
       let query = context.adminClient
         .from("sales")
-        .select("id, product_id, product_name, quantity, unit_price, total_amount, payment_method, payment_status, sold_at, notes, voided_at, created_at")
+        .select("id, product_id, product_name, quantity, unit_price, unit_cost, total_amount, total_cost, gross_profit, customer_name, payment_method, payment_status, payment_received_at, sold_at, notes, voided_at, created_at")
         .order("sold_at", { ascending: false })
         .limit(1000);
       if (from) query = query.gte("sold_at", from);
@@ -40,11 +40,13 @@ Deno.serve(async (request) => {
       const paymentStatus = String(body.payment_status ?? "");
       const soldAt = String(body.sold_at ?? "");
       const notes = String(body.notes ?? "").trim();
+      const customerName = String(body.customer_name ?? "").trim();
       if (!productId || !Number.isInteger(quantity) || quantity <= 0) return json(request, { error: "Informe o produto e uma quantidade válida." }, 400);
       if (!Number.isFinite(unitPrice) || unitPrice <= 0) return json(request, { error: "Informe um valor maior que zero." }, 400);
       if (!PAYMENT_METHODS.has(paymentMethod)) return json(request, { error: "Forma de pagamento inválida." }, 400);
       if (!["paid", "pending"].includes(paymentStatus)) return json(request, { error: "Situação do pagamento inválida." }, 400);
       if (notes.length > 500) return json(request, { error: "A observação deve ter até 500 caracteres." }, 400);
+      if (customerName.length > 160) return json(request, { error: "O nome do cliente deve ter até 160 caracteres." }, 400);
 
       const { data, error } = await context.adminClient.rpc("register_sale", {
         p_product_id: productId,
@@ -57,6 +59,10 @@ Deno.serve(async (request) => {
         p_created_by: context.user.id,
       });
       if (error) throw new Error(error.message);
+      if (customerName) {
+        const saleId = Array.isArray(data) ? data[0]?.id : (data as { id?: string } | null)?.id;
+        if (saleId) await context.adminClient.from("sales").update({ customer_name: customerName }).eq("id", saleId);
+      }
       return json(request, { ok: true, sale: data }, 201);
     }
 
