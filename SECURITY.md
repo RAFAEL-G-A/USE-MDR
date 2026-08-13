@@ -37,10 +37,12 @@ As políticas RLS exigem o papel administrativo, a sessão verificada e uma
 autorização ainda válida. A mesma regra protege a tabela `products` e as
 operações de catálogo e carrossel no bucket `products`. A tabela financeira
 `sales` não permite leitura nem gravação direta por visitantes ou usuários
-autenticados; somente as funções administrativas podem acessá-la.
+autenticados; somente as funções administrativas podem acessá-la. A mesma
+restrição protege `product_costs`, `expenses`, `financial_closures`,
+`financial_report_settings` e `financial_job_runs`.
 
 O navegador não grava diretamente no banco. O formulário chama apenas a Edge
-Functions `create-product`, `manage-product`, `manage-hero-slide`, `manage-category-image` e `manage-sales`, que repetem as verificações
+Functions `create-product`, `manage-product`, `manage-hero-slide`, `manage-category-image`, `manage-sales` e `manage-finances`, que repetem as verificações
 administrativas no servidor, validam os campos e coordenam uploads e gravações.
 Assim, uma operação não fica parcialmente concluída quando o banco rejeita os
 dados.
@@ -59,5 +61,8 @@ GitHub ou em variáveis `NEXT_PUBLIC_*`.
 - API `manage-hero-slide`: gerenciamento dos destaques da página inicial;
 - API `manage-category-image`: substituição e limpeza das imagens de categorias;
 - API `manage-sales`: fluxo de vendas, recebimentos e cancelamentos transacionais;
+- API `manage-finances`: métricas, despesas, configurações e fechamentos;
+- API `run-financial-reports`: execução server-side autorizada por segredo de máquina;
+- Cloudflare Cron Trigger: agenda fechamentos sem depender do navegador;
 - Resend: entrega do e-mail transacional;
 - Supabase RLS: decisão final de autorização para banco e Storage.

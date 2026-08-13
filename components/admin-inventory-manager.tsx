@@ -11,6 +11,7 @@ type Product = {
   id: string;
   name: string;
   price: number;
+  costPrice: number;
   category: string;
   subcategory: string;
   imageUrl: string;
@@ -38,9 +39,11 @@ export function AdminInventoryManager() {
 
   useEffect(() => {
     let cancelled = false;
-    void supabase.from("products").select("id, name, price, category, subcategory, image_url, description, stock, is_launch").order("created_at", { ascending: false }).then(({ data }) => {
+    void supabase.functions.invoke("manage-product", { body: { action: "list" } }).then(({ data, error }) => {
       if (cancelled) return;
-      setProducts((data ?? []).map((item) => ({ id: String(item.id), name: item.name, price: Number(item.price), category: item.category, subcategory: item.subcategory ?? "", imageUrl: item.image_url ?? "", description: item.description ?? "", stock: item.stock, isLaunch: Boolean(item.is_launch) })));
+      const payload = data as { products?: Array<Record<string, unknown>> } | null;
+      if (error) setProducts([]);
+      else setProducts((payload?.products ?? []).map((item) => ({ id: String(item.id), name: String(item.name), price: Number(item.price), costPrice: Number(item.cost_price ?? 0), category: String(item.category), subcategory: String(item.subcategory ?? ""), imageUrl: String(item.image_url ?? ""), description: String(item.description ?? ""), stock: Number(item.stock), isLaunch: Boolean(item.is_launch) })));
       setLoading(false);
     });
     return () => { cancelled = true; };
@@ -50,6 +53,7 @@ export function AdminInventoryManager() {
   const outOfStock = products.filter((product) => product.stock === 0).length;
 
   function refresh() {
+    setLoading(true);
     setRefreshKey((current) => current + 1);
     setEditingId(null);
   }
@@ -76,7 +80,7 @@ export function AdminInventoryManager() {
               <div key={product.id} className="overflow-hidden rounded-2xl border border-brand-border/80">
                 <div className="flex items-center gap-4 p-3 sm:p-4">
                   <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-brand-soft">{product.imageUrl && <Image src={product.imageUrl} alt={product.name} fill sizes="64px" className="object-cover" />}</div>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{product.name}</p><p className="mt-1 text-xs text-muted">R$ {product.price.toFixed(2).replace(".", ",")} · {product.stock} un.</p></div>
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{product.name}</p><p className="mt-1 text-xs text-muted">Venda R$ {product.price.toFixed(2).replace(".", ",")} · Custo R$ {product.costPrice.toFixed(2).replace(".", ",")} · {product.stock} un.</p></div>
                   <button type="button" onClick={() => setEditingId(editingId === product.id ? null : product.id)} className="rounded-full border border-brand-border px-4 py-2 text-xs font-bold text-brand">{editingId === product.id ? "Fechar" : "Editar"}</button>
                 </div>
                 {editingId === product.id && <ProductEditor key={product.id} product={product} onChanged={refresh} />}
@@ -121,6 +125,7 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
     requestData.set("id", product.id);
     requestData.set("name", String(formData.get("name") ?? "").trim());
     requestData.set("price", String(Number(String(formData.get("price") ?? "").replace(/\./g, "").replace(",", "."))));
+    requestData.set("cost_price", String(Number(String(formData.get("cost_price") ?? "").replace(/\./g, "").replace(",", "."))));
     requestData.set("stock", String(formData.get("stock") ?? ""));
     requestData.set("category", category);
     requestData.set("subcategory", subcategory);
@@ -148,7 +153,7 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
     <form onSubmit={handleUpdate} className="grid gap-5 border-t border-brand-border/70 bg-brand-soft/20 p-4 sm:grid-cols-2 sm:p-6">
       <div className="space-y-4">
         <FormField label="Nome" htmlFor={`edit-name-${product.id}`}><input id={`edit-name-${product.id}`} name="name" required defaultValue={product.name} maxLength={120} className="form-control" /></FormField>
-        <div className="grid grid-cols-2 gap-3"><FormField label="Preço" htmlFor={`edit-price-${product.id}`}><input id={`edit-price-${product.id}`} name="price" required inputMode="decimal" defaultValue={product.price.toFixed(2).replace(".", ",")} className="form-control" /></FormField><FormField label="Estoque" htmlFor={`edit-stock-${product.id}`}><input id={`edit-stock-${product.id}`} name="stock" type="number" required min={0} step={1} defaultValue={product.stock} className="form-control" /></FormField></div>
+        <div className="grid grid-cols-3 gap-3"><FormField label="Venda" htmlFor={`edit-price-${product.id}`}><input id={`edit-price-${product.id}`} name="price" required inputMode="decimal" defaultValue={product.price.toFixed(2).replace(".", ",")} className="form-control" /></FormField><FormField label="Custo" htmlFor={`edit-cost-${product.id}`}><input id={`edit-cost-${product.id}`} name="cost_price" required inputMode="decimal" defaultValue={product.costPrice.toFixed(2).replace(".", ",")} className="form-control" /></FormField><FormField label="Estoque" htmlFor={`edit-stock-${product.id}`}><input id={`edit-stock-${product.id}`} name="stock" type="number" required min={0} step={1} defaultValue={product.stock} className="form-control" /></FormField></div>
         <div className="grid grid-cols-2 gap-3"><FormField label="Categoria" htmlFor={`edit-category-${product.id}`}><select id={`edit-category-${product.id}`} value={category} onChange={(event) => { const nextCategory = event.target.value as CatalogCategory; setCategory(nextCategory); setSubcategory(catalogTaxonomy[nextCategory][0]); }} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField><FormField label="Subcategoria" htmlFor={`edit-subcategory-${product.id}`}><select id={`edit-subcategory-${product.id}`} name="subcategory" value={subcategory} onChange={(event) => setSubcategory(event.target.value)} className="form-control">{catalogTaxonomy[category].map((item) => <option key={item}>{item}</option>)}</select></FormField></div>
         <FormField label="Descrição" htmlFor={`edit-description-${product.id}`}><textarea id={`edit-description-${product.id}`} name="description" rows={4} maxLength={1000} defaultValue={product.description} className="form-control resize-y" /></FormField>
         <label className="flex items-center gap-3 text-sm font-bold"><input name="is_launch" type="checkbox" defaultChecked={product.isLaunch} className="size-5 accent-brand" /> Exibir em Lançamentos</label>

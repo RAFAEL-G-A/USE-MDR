@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const items = [
   { href: "/admin/estoque", label: "Gerenciar estoque", mobileLabel: "Estoque", description: "Produtos, imagens e quantidades", icon: InventoryIcon },
   { href: "/admin/destaques", label: "Destaques", mobileLabel: "Destaques", description: "Carrossel da página inicial", icon: HighlightsIcon },
-  { href: "/admin/rendimentos", label: "Rendimentos", mobileLabel: "Rendimentos", description: "Vendas, caixa e relatórios", icon: EarningsIcon },
+  { href: "/admin/financas", label: "Finanças", mobileLabel: "Finanças", description: "Vendas, despesas e fechamentos", icon: EarningsIcon },
 ];
 
 export function AdminNavigation() {

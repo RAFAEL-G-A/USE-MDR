@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "use-mdr-beauty-preview",
-  "main": ".open-next/worker.js",
+  "main": "custom-worker.ts",
   "compatibility_date": "2026-08-13",
   "compatibility_flags": [
     "nodejs_compat",
@@ -19,6 +19,15 @@
   ],
   "images": {
     "binding": "IMAGES"
+  },
+  "vars": {
+    "SUPABASE_URL": "https://tsrsncnraamnhcfyyxlg.supabase.co"
+  },
+  "triggers": {
+    "crons": [
+      "5 20 * * 1-5",
+      "5 16 * * 6"
+    ]
   },
   "observability": {
     "enabled": true,
