@@ -23,6 +23,7 @@ export type CatalogProduct = {
   imageUrl: string;
   description: string | null;
   stock: number;
+  images: string[];
 };
 
 function parseProductPrice(value: number | string) {
@@ -64,6 +65,7 @@ export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
       imageUrl: product.image_url as string,
       description: product.description,
       stock: product.stock,
+      images: [product.image_url as string],
     }))
     .filter((product) => Number.isFinite(product.price));
 }
@@ -100,6 +102,7 @@ export async function getLaunchProducts(limit = 6): Promise<CatalogProduct[]> {
       imageUrl: product.image_url as string,
       description: product.description,
       stock: product.stock,
+      images: [product.image_url as string],
     }))
     .filter((product) => Number.isFinite(product.price));
 }
@@ -116,6 +119,7 @@ export async function getProductById(id: string): Promise<CatalogProduct | null>
       imageUrl: typeof demoProduct.image === "string" ? demoProduct.image : demoProduct.image.src,
       description: demoProduct.description,
       stock: demoProduct.stock,
+      images: [typeof demoProduct.image === "string" ? demoProduct.image : demoProduct.image.src],
     };
   }
 
@@ -134,6 +138,13 @@ export async function getProductById(id: string): Promise<CatalogProduct | null>
   const price = parseProductPrice(product.price);
   if (!Number.isFinite(price)) return null;
 
+  const { data: gallery, error: galleryError } = await supabase
+    .from("product_images")
+    .select("image_url, sort_order")
+    .eq("product_id", String(product.id))
+    .order("sort_order", { ascending: true })
+    .returns<Array<{ image_url: string; sort_order: number }>>();
+
   return {
     id: String(product.id),
     name: product.name,
@@ -143,5 +154,6 @@ export async function getProductById(id: string): Promise<CatalogProduct | null>
     imageUrl: product.image_url as string,
     description: product.description,
     stock: product.stock,
+    images: [product.image_url as string, ...(galleryError ? [] : (gallery ?? []).map((item) => item.image_url))],
   };
 }

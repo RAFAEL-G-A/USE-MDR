@@ -21,6 +21,8 @@ tradicional.
 - categorias e subcategorias de produtos;
 - busca por nome;
 - páginas individuais dos produtos;
+- galeria com até quatro imagens, exibida somente na página individual;
+- compressão, redimensionamento e conversão automática dos uploads para WebP;
 - favoritos salvos no próprio dispositivo;
 - carrinho com alteração de quantidades e total automático;
 - pedido formatado com itens, quantidades, subtotais e total para o WhatsApp;

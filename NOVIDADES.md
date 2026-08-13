@@ -40,6 +40,13 @@ celular.
 - Confirmação do carregamento dos produtos do Supabase no novo ambiente.
 - Validação da Home, do carrossel, das categorias, dos lançamentos e do rodapé.
 - Netlify preservada como alternativa durante a transição.
+- Galeria de até quatro fotos por produto, mantendo somente a capa nos cards do
+  catálogo.
+- Conversão automática das novas imagens para WebP antes do envio.
+- Ferramenta para otimizar as fotos já cadastradas e remover do Storage os
+  arquivos substituídos.
+- Conversão das seis capas existentes, reduzindo o espaço total de cerca de
+  1,25 MB para 203 KB, uma economia aproximada de 84%.
 
 ## Ideias que orientam o projeto
 
