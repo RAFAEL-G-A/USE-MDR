@@ -1,8 +1,11 @@
 import { InstagramIcon, MapPinIcon, WhatsAppIcon } from "@/components/icons";
+import { normalizeWhatsAppNumber } from "@/lib/whatsapp";
 
 const instagramUrl = "https://www.instagram.com/use.mdr?igsh=ZXNwdWtldHlicXp6";
-const whatsappNumber = "WHATSAPP_NUMBER_REMOVED";
-const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Olá! Vim pelo site da USE MDR e gostaria de mais informações.")}`;
+const whatsappNumber = normalizeWhatsAppNumber(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER);
+const whatsappUrl = whatsappNumber
+  ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Olá! Vim pelo site da USE MDR e gostaria de mais informações.")}`
+  : "";
 
 export function SiteFooter() {
   return (
@@ -21,15 +24,17 @@ export function SiteFooter() {
           >
             <InstagramIcon className="size-5" />
           </a>
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Conversar com a USE MDR pelo WhatsApp"
-            className="flex size-10 items-center justify-center rounded-full border border-brand-border bg-brand-soft text-brand transition-colors hover:border-brand hover:bg-brand hover:text-white"
-          >
-            <WhatsAppIcon className="size-5" />
-          </a>
+          {whatsappUrl && (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Conversar com a USE MDR pelo WhatsApp"
+              className="flex size-10 items-center justify-center rounded-full border border-brand-border bg-brand-soft text-brand transition-colors hover:border-brand hover:bg-brand hover:text-white"
+            >
+              <WhatsAppIcon className="size-5" />
+            </a>
+          )}
         </div>
         <address className="mx-auto mt-3 flex max-w-xl items-start justify-center gap-2 text-xs not-italic leading-5 text-muted sm:text-sm">
           <MapPinIcon className="mt-0.5 size-4 shrink-0 text-brand" />
