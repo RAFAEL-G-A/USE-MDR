@@ -144,6 +144,18 @@ idempotência no provedor.
 
 ## Cloudflare Workers
 
+Preview publicado e validado em 13/08/2026:
+
+- [USE MDR na Cloudflare](https://use-mdr-beauty-preview.usemdr-web.workers.dev/)
+- Worker: `use-mdr-beauty-preview`
+- ambiente mobile, catálogo e acesso administrativo verificados;
+- `FINANCIAL_CRON_SECRET` configurado no Worker e no Supabase;
+- URL Cloudflare autorizada em `ADMIN_ALLOWED_ORIGINS`;
+- Cron Triggers ativos para dias úteis e sábado.
+
+O endereço Netlify continua ativo como fallback. Nenhum domínio ou DNS foi
+transferido nesta etapa.
+
 Arquivos principais:
 
 - `open-next.config.ts`: adaptador e cache dos assets;
