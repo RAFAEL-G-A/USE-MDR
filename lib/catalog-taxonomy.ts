@@ -15,6 +15,7 @@ export const catalogTaxonomy = {
     "Iluminadores",
     "Contorno",
     "Primer",
+    "Brumas",
   ],
   "Skincare": [
     "Séruns",

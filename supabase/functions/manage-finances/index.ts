@@ -70,7 +70,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
-    assertInventoryAccess(context);
+    await assertInventoryAccess(context);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const action = String(body.action ?? "dashboard");
 
@@ -80,13 +80,14 @@ Deno.serve(async (request) => {
       const anchor = String(body.anchor ?? "");
       if (anchor && !validIsoDate(anchor)) return json(request, { error: "Data de referência inválida." }, 400);
       const range = periodRange(period, anchor);
-      const [current, previous, series, expenses] = await Promise.all([
+      const [current, previous, series, expenses, corrections] = await Promise.all([
         context.adminClient.rpc("get_financial_metrics", { p_period_start: range.start, p_period_end: range.end }),
         context.adminClient.rpc("get_financial_metrics", { p_period_start: range.previousStart, p_period_end: range.previousEnd }),
         context.adminClient.rpc("get_financial_series", { p_period_start: range.start, p_period_end: range.end }),
         context.adminClient.from("expenses").select("id, description, amount, category, occurred_at, notes, status, paid_at, created_at").neq("status", "void").order("occurred_at", { ascending: false }).limit(200),
+        context.adminClient.rpc("get_sale_corrections", { p_period_start: range.start, p_period_end: range.end }),
       ]);
-      const failure = [current.error, previous.error, series.error, expenses.error].find(Boolean);
+      const failure = [current.error, previous.error, series.error, expenses.error, corrections.error].find(Boolean);
       if (failure) throw new Error(`Não foi possível carregar as finanças: ${failure.message}`);
       return json(request, {
         ok: true,
@@ -96,6 +97,7 @@ Deno.serve(async (request) => {
         previous_metrics: previous.data,
         series: series.data,
         expenses: expenses.data ?? [],
+        sale_corrections: corrections.data ?? [],
       });
     }
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { demoProducts } from "@/lib/demo-products";
 
@@ -107,7 +108,7 @@ export async function getLaunchProducts(limit = 6): Promise<CatalogProduct[]> {
     .filter((product) => Number.isFinite(product.price));
 }
 
-export async function getProductById(id: string): Promise<CatalogProduct | null> {
+async function queryProductById(id: string): Promise<CatalogProduct | null> {
   const demoProduct = demoProducts.find((product) => product.id === id);
   if (demoProduct) {
     return {
@@ -157,3 +158,6 @@ export async function getProductById(id: string): Promise<CatalogProduct | null>
     images: [product.image_url as string, ...(galleryError ? [] : (gallery ?? []).map((item) => item.image_url))],
   };
 }
+
+// Evita repetir a mesma leitura quando a página e seus metadados pedem o produto.
+export const getProductById = cache(queryProductById);

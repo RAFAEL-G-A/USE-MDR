@@ -4,7 +4,7 @@ import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { catalogCategories, catalogTaxonomy, type CatalogCategory } from "@/lib/catalog-taxonomy";
-import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, type CompressedProductImage } from "@/lib/image-compression";
+import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Feedback = { type: "success" | "error"; message: string } | null;
@@ -142,13 +142,13 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
           <label htmlFor="product-image" className="relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-[1.75rem] border border-dashed border-brand-border bg-brand-soft/50 text-center">
             {imagePreview ? <Image src={imagePreview} alt="Prévia da imagem" fill unoptimized className="object-cover" /> : <span className="max-w-48 px-6 text-sm leading-6 text-muted">Toque para escolher uma foto.</span>}
           </label>
-          <input id="product-image" type="file" required accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => void preparePrimaryImage(event.target.files?.[0] ?? null)} />
+          <input id="product-image" type="file" required accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => void preparePrimaryImage(event.target.files?.[0] ?? null)} />
           <p className="mt-2 text-xs text-muted">A foto é redimensionada, comprimida e convertida para WebP antes do envio.</p>
           {primaryImage && <p className="mt-1 text-xs font-bold text-emerald-700">{formatImageSize(primaryImage.originalSize)} → {formatImageSize(primaryImage.file.size)} · {primaryImage.width}×{primaryImage.height}px</p>}
           <div className="mt-5 border-t border-brand-border/70 pt-5">
             <div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-[0.1em]">Imagens adicionais</span><span className="text-xs text-muted">{galleryImages.length}/3</span></div>
             {galleryImages.length > 0 && <div className="mt-3 grid grid-cols-3 gap-2">{galleryImages.map((item, index) => <div key={`${item.file.name}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-brand-border"><Image src={galleryPreviews[index]} alt={`Prévia adicional ${index + 1}`} fill unoptimized className="object-cover" /><button type="button" onClick={() => setGalleryImages((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remover imagem adicional ${index + 1}`} className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-brand shadow">×</button></div>)}</div>}
-            {galleryImages.length < MAX_PRODUCT_IMAGES - 1 && <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-brand-border bg-brand-soft/40 px-4 text-center text-xs font-bold text-brand">Adicionar fotos<input type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { void prepareGalleryImages(event.target.files); event.currentTarget.value = ""; }} /></label>}
+            {galleryImages.length < MAX_PRODUCT_IMAGES - 1 && <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-brand-border bg-brand-soft/40 px-4 text-center text-xs font-bold text-brand">Adicionar fotos<input type="file" multiple accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => { void prepareGalleryImages(event.target.files); event.currentTarget.value = ""; }} /></label>}
             <p className="mt-2 text-xs leading-5 text-muted">Até três fotos extras. Elas aparecerão somente ao abrir o produto.</p>
           </div>
         </FormField>

@@ -18,15 +18,22 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
 
   useEffect(() => {
     if (slides.length < 2 || paused) return;
-    const timer = window.setInterval(() => setActiveIndex((current) => (current + 1) % slides.length), 6500);
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % slides.length);
+    }, 6500);
     return () => window.clearInterval(timer);
   }, [paused, slides.length]);
 
   if (!slides.length) return null;
   const visibleIndex = activeIndex % slides.length;
 
-  function showPrevious() { setActiveIndex((current) => (current - 1 + slides.length) % slides.length); }
-  function showNext() { setActiveIndex((current) => (current + 1) % slides.length); }
+  function showPrevious() {
+    setActiveIndex((current) => (current - 1 + slides.length) % slides.length);
+  }
+
+  function showNext() {
+    setActiveIndex((current) => (current + 1) % slides.length);
+  }
 
   function handlePointerDown(event: PointerEvent<HTMLElement>) {
     if (slides.length < 2 || (event.target as HTMLElement).closest("a, button")) return;
@@ -44,12 +51,15 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   function finishSwipe(event: PointerEvent<HTMLElement>) {
     if (dragStartX.current === null) return;
     const distance = dragDistance.current;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     dragStartX.current = null;
     dragDistance.current = 0;
     setDragging(false);
     if (Math.abs(distance) < SWIPE_THRESHOLD) return;
-    if (distance < 0) showNext(); else showPrevious();
+    if (distance < 0) showNext();
+    else showPrevious();
   }
 
   function cancelSwipe() {
@@ -66,7 +76,9 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setFocusWithin(true)}
-      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusWithin(false); }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusWithin(false);
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={finishSwipe}
@@ -96,7 +108,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
               {slide.eyebrow && <p className="mb-4 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand sm:text-xs">✦ {slide.eyebrow}</p>}
               {slide.title && <h1 className="font-serif text-[2.45rem] leading-[0.98] tracking-[-0.05em] text-foreground sm:text-6xl md:text-7xl">{slide.title}</h1>}
               {slide.description && <p className="mt-5 max-w-xs text-xs leading-5 text-muted sm:text-base sm:leading-7">{slide.description}</p>}
-              <Link href="/catalogo#produtos" tabIndex={isActive ? 0 : -1} className="mt-7 inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-full bg-brand px-4 text-[0.62rem] font-extrabold tracking-wide text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand-strong sm:min-h-14 sm:px-7 sm:text-sm">
+              <Link href="/catalogo#produtos" prefetch={false} tabIndex={isActive ? 0 : -1} className="mt-7 inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-full bg-brand px-4 text-[0.62rem] font-extrabold tracking-wide text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand-strong sm:min-h-14 sm:px-7 sm:text-sm">
                 EXPLORAR NOVIDADES <span className="text-xl leading-none" aria-hidden="true">→</span>
               </Link>
             </div>
@@ -108,7 +120,14 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
         <div className="absolute inset-x-0 bottom-4 z-20 flex items-center justify-center">
           <div className="flex gap-1.5 rounded-full bg-white/85 px-3 py-2 shadow-sm backdrop-blur" aria-label="Escolher destaque">
             {slides.map((slide, index) => (
-              <button key={slide.slot} type="button" onClick={() => setActiveIndex(index)} aria-label={`Mostrar destaque ${index + 1}`} aria-current={index === visibleIndex ? "true" : undefined} className={`h-2 rounded-full transition-all ${index === visibleIndex ? "w-6 bg-brand" : "w-2 bg-brand/30"}`} />
+              <button
+                key={slide.slot}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                aria-label={`Mostrar destaque ${index + 1}`}
+                aria-current={index === visibleIndex ? "true" : undefined}
+                className={`h-2 rounded-full transition-all ${index === visibleIndex ? "w-6 bg-brand" : "w-2 bg-brand/30"}`}
+              />
             ))}
           </div>
         </div>

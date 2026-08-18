@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { AdminProductForm, FeedbackMessage, FormField } from "@/components/admin-product-form";
 import { catalogCategories, catalogTaxonomy, type CatalogCategory } from "@/lib/catalog-taxonomy";
-import { compressProductImage, compressProductImageUrl, formatImageSize, MAX_PRODUCT_IMAGES, type CompressedProductImage } from "@/lib/image-compression";
+import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type GalleryImage = { id: string; imageUrl: string; storagePath: string; sortOrder: number };
@@ -40,9 +40,6 @@ export function AdminInventoryManager() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [optimizing, setOptimizing] = useState(false);
-  const [optimizationProgress, setOptimizationProgress] = useState("");
-  const [optimizationFeedback, setOptimizationFeedback] = useState<Feedback>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,43 +77,6 @@ export function AdminInventoryManager() {
     setEditingId(null);
   }
 
-  async function optimizeExistingImages() {
-    const candidates = products.filter((product) => {
-      try { return !new URL(product.imageUrl).pathname.toLowerCase().endsWith(".webp"); }
-      catch { return !product.imageUrl.toLowerCase().endsWith(".webp"); }
-    });
-    if (!candidates.length) {
-      setOptimizationFeedback({ type: "success", message: "Todas as imagens principais já estão em WebP." });
-      return;
-    }
-    setOptimizing(true);
-    setOptimizationFeedback(null);
-    let originalBytes = 0;
-    let compressedBytes = 0;
-    try {
-      for (let index = 0; index < candidates.length; index += 1) {
-        const product = candidates[index];
-        setOptimizationProgress(`${index + 1}/${candidates.length} · ${product.name}`);
-        const compressed = await compressProductImageUrl(product.imageUrl, product.name);
-        const requestData = new FormData();
-        requestData.set("action", "replace_image");
-        requestData.set("id", product.id);
-        requestData.set("image", compressed.file);
-        const { error } = await supabase.functions.invoke("manage-product", { body: requestData });
-        if (error) throw new Error(await functionErrorMessage(error, `Não foi possível otimizar ${product.name}.`));
-        originalBytes += compressed.originalSize;
-        compressedBytes += compressed.file.size;
-      }
-      setOptimizationFeedback({ type: "success", message: `${candidates.length} imagens convertidas para WebP: ${formatImageSize(originalBytes)} → ${formatImageSize(compressedBytes)}.` });
-      refresh();
-    } catch (error) {
-      setOptimizationFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível concluir a otimização." });
-    } finally {
-      setOptimizing(false);
-      setOptimizationProgress("");
-    }
-  }
-
   return (
     <div className="space-y-8">
       <div>
@@ -132,9 +92,7 @@ export function AdminInventoryManager() {
       </div>
 
       <section className="rounded-[2rem] border border-brand-border bg-white p-5 shadow-soft sm:p-8">
-        <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-extrabold tracking-[0.18em] text-brand">INVENTÁRIO ATUAL</p><h2 className="mt-2 font-serif text-3xl sm:text-4xl">Editar produtos</h2></div><div className="flex flex-wrap gap-3"><button type="button" onClick={() => void optimizeExistingImages()} disabled={optimizing || loading} className="rounded-full border border-brand-border px-4 py-2 text-xs font-bold text-brand disabled:opacity-50">{optimizing ? "OTIMIZANDO..." : "OTIMIZAR FOTOS ATUAIS"}</button><button type="button" onClick={refresh} className="px-2 py-2 text-xs font-bold text-brand">Atualizar lista</button></div></div>
-        {optimizationProgress && <p className="mt-4 text-xs font-bold text-brand">{optimizationProgress}</p>}
-        {optimizationFeedback && <div className="mt-4"><FeedbackMessage feedback={optimizationFeedback} /></div>}
+        <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-extrabold tracking-[0.18em] text-brand">INVENTÁRIO ATUAL</p><h2 className="mt-2 font-serif text-3xl sm:text-4xl">Editar produtos</h2></div><button type="button" onClick={refresh} className="px-2 py-2 text-xs font-bold text-brand">Atualizar lista</button></div>
         {loading ? <p className="mt-6 text-sm text-muted">Carregando estoque...</p> : products.length === 0 ? <p className="mt-6 text-sm text-muted">Nenhum produto cadastrado.</p> : (
           <div className="mt-6 space-y-3">
             {products.map((product) => (
@@ -263,7 +221,7 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
         <label className="flex items-center gap-3 text-sm font-bold"><input name="is_launch" type="checkbox" defaultChecked={product.isLaunch} className="size-5 accent-brand" /> Exibir em Lançamentos</label>
       </div>
       <div>
-        <FormField label="Substituir imagem principal" htmlFor={`edit-image-${product.id}`}><label htmlFor={`edit-image-${product.id}`} className="relative flex aspect-square cursor-pointer overflow-hidden rounded-2xl border border-brand-border bg-white"><Image src={preview} alt={`Imagem de ${product.name}`} fill unoptimized={Boolean(primaryImage)} className="object-cover" /></label><input id={`edit-image-${product.id}`} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => void preparePrimaryImage(event.target.files?.[0] ?? null)} /><p className="mt-2 text-xs text-muted">A nova foto será comprimida em WebP e a anterior será apagada após salvar.</p>{primaryImage && <p className="mt-1 text-xs font-bold text-emerald-700">{formatImageSize(primaryImage.originalSize)} → {formatImageSize(primaryImage.file.size)}</p>}</FormField>
+        <FormField label="Substituir imagem principal" htmlFor={`edit-image-${product.id}`}><label htmlFor={`edit-image-${product.id}`} className="relative flex aspect-square cursor-pointer overflow-hidden rounded-2xl border border-brand-border bg-white"><Image src={preview} alt={`Imagem de ${product.name}`} fill unoptimized={Boolean(primaryImage)} className="object-cover" /></label><input id={`edit-image-${product.id}`} type="file" accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => void preparePrimaryImage(event.target.files?.[0] ?? null)} /><p className="mt-2 text-xs text-muted">Aceita fotos do iPhone (HEIC/HEIF), JPEG, PNG e WebP. A nova foto será comprimida em WebP e a anterior será apagada após salvar.</p>{primaryImage && <p className="mt-1 text-xs font-bold text-emerald-700">{formatImageSize(primaryImage.originalSize)} → {formatImageSize(primaryImage.file.size)}</p>}</FormField>
         <div className="mt-5 border-t border-brand-border/70 pt-5">
           <div className="flex items-center justify-between"><p className="text-xs font-extrabold uppercase tracking-[0.1em]">Galeria do produto</p><span className="text-xs text-muted">{product.images.length - removedImageIds.length + newGalleryImages.length}/3</span></div>
           {(product.images.length > 0 || newGalleryImages.length > 0) && <div className="mt-3 grid grid-cols-3 gap-2">
@@ -273,7 +231,7 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
             })}
             {newGalleryImages.map((item, index) => <div key={`${item.file.name}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-brand-border"><Image src={newGalleryPreviews[index]} alt={`Nova imagem adicional ${index + 1}`} fill unoptimized className="object-cover" /><button type="button" onClick={() => setNewGalleryImages((current) => current.filter((_, itemIndex) => itemIndex !== index))} className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-white/90 font-bold text-brand shadow">×</button></div>)}
           </div>}
-          {product.images.length - removedImageIds.length + newGalleryImages.length < MAX_PRODUCT_IMAGES - 1 && <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-brand-border bg-white px-4 text-center text-xs font-bold text-brand">Adicionar fotos<input type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { void prepareAdditionalImages(event.target.files); event.currentTarget.value = ""; }} /></label>}
+          {product.images.length - removedImageIds.length + newGalleryImages.length < MAX_PRODUCT_IMAGES - 1 && <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-brand-border bg-white px-4 text-center text-xs font-bold text-brand">Adicionar fotos<input type="file" multiple accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => { void prepareAdditionalImages(event.target.files); event.currentTarget.value = ""; }} /></label>}
           <p className="mt-2 text-xs leading-5 text-muted">Até três fotos extras, exibidas apenas na página individual.</p>
         </div>
       </div>

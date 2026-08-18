@@ -1,8 +1,9 @@
-const MAX_INPUT_SIZE = 12 * 1024 * 1024;
+export const MAX_PRODUCT_IMAGE_INPUT_SIZE = 5 * 1024 * 1024;
 const TARGET_OUTPUT_SIZE = 700 * 1024;
 const MAX_DIMENSION = 1600;
 
 export const MAX_PRODUCT_IMAGES = 4;
+export const PRODUCT_IMAGE_ACCEPT = "image/*,.heic,.heif";
 
 export type CompressedProductImage = {
   file: File;
@@ -16,16 +17,34 @@ function webpFilename(filename: string) {
   return `${base || "produto"}.webp`;
 }
 
-function canvasToWebp(canvas: HTMLCanvasElement, quality: number) {
-  return new Promise<Blob>((resolve, reject) => {
+function canvasToNativeWebp(canvas: HTMLCanvasElement, quality: number) {
+  return new Promise<Blob | null>((resolve) => {
     canvas.toBlob((blob) => {
-      if (!blob || blob.type !== "image/webp") {
-        reject(new Error("Este navegador não conseguiu converter a imagem para WebP."));
-        return;
-      }
-      resolve(blob);
+      resolve(blob?.type === "image/webp" ? blob : null);
     }, "image/webp", quality);
   });
+}
+
+async function canvasToWebp(canvas: HTMLCanvasElement, quality: number) {
+  const nativeBlob = await canvasToNativeWebp(canvas, quality);
+  if (nativeBlob) return nativeBlob;
+
+  try {
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) throw new Error("Contexto da imagem indisponível.");
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const { default: encodeWebp } = await import("@jsquash/webp/encode.js");
+    const buffer = await encodeWebp(imageData, {
+      quality: Math.round(quality * 100),
+      method: 4,
+    });
+    const blob = new Blob([buffer], { type: "image/webp" });
+    if (blob.size === 0) throw new Error("O codificador retornou um arquivo vazio.");
+    return blob;
+  } catch (error) {
+    console.error("Falha no codificador WebP alternativo:", error);
+    throw new Error("Não foi possível otimizar esta foto no iPhone. Atualize a página e tente novamente.");
+  }
 }
 
 function loadImage(file: File) {
@@ -38,18 +57,21 @@ function loadImage(file: File) {
     };
     image.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error(`Não foi possível abrir ${file.name}.`));
+      const iphonePhoto = /\.(heic|heif)$/i.test(file.name) || /image\/(heic|heif)/i.test(file.type);
+      reject(new Error(iphonePhoto
+        ? `O iPhone selecionou ${file.name}, mas o navegador não conseguiu abri-la. Em Ajustes > Câmera > Formatos, escolha “Mais Compatível” e tente novamente.`
+        : `Não foi possível abrir ${file.name}. Escolha uma foto JPEG, PNG, WebP, HEIC ou HEIF.`));
     };
     image.src = url;
   });
 }
 
 export async function compressProductImage(file: File): Promise<CompressedProductImage> {
-  if (!file.type.startsWith("image/")) {
+  if (!isSupportedProductImage(file)) {
     throw new Error(`${file.name} não é uma imagem válida.`);
   }
-  if (file.size > MAX_INPUT_SIZE) {
-    throw new Error(`${file.name} ultrapassa o limite de 12 MB.`);
+  if (file.size > MAX_PRODUCT_IMAGE_INPUT_SIZE) {
+    throw new Error(`${file.name} ultrapassa o limite de 5 MB.`);
   }
 
   const source = await loadImage(file);
@@ -87,12 +109,8 @@ export async function compressProductImage(file: File): Promise<CompressedProduc
   };
 }
 
-export async function compressProductImageUrl(imageUrl: string, fallbackName: string) {
-  const response = await fetch(imageUrl, { mode: "cors" });
-  if (!response.ok) throw new Error("Não foi possível baixar a imagem atual.");
-  const blob = await response.blob();
-  const extension = blob.type.split("/")[1] || "jpg";
-  return compressProductImage(new File([blob], `${fallbackName}.${extension}`, { type: blob.type }));
+export function isSupportedProductImage(file: Pick<File, "name" | "type">) {
+  return file.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name);
 }
 
 export function formatImageSize(bytes: number) {

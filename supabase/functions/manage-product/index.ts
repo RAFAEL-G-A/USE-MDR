@@ -53,7 +53,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
-    assertInventoryAccess(context);
+    await assertInventoryAccess(context);
     const contentType = request.headers.get("content-type") ?? "";
 
     if (contentType.includes("application/json")) {

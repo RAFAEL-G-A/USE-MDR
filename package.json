@@ -12,9 +12,18 @@
     "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "test:finance": "node --test tests/financial-periods.test.ts"
+    "test:catalog": "node --test tests/catalog-pagination.test.ts",
+    "test:taxonomy": "node --test tests/catalog-taxonomy.test.ts",
+    "test:finance": "node --test tests/financial-periods.test.ts",
+    "test:sales": "node --test tests/admin-sales.test.ts",
+    "test:integrity": "node --test tests/sales-integrity.test.ts",
+    "test:time": "node --test tests/store-time.test.ts",
+    "test:images": "node --test tests/image-formats.test.ts",
+    "test:prefetch": "node --test tests/no-next-prefetch.test.ts",
+    "test:hero": "node --test tests/hero-fade-toggle.test.ts"
   },
   "dependencies": {
+    "@jsquash/webp": "1.5.0",
     "@supabase/supabase-js": "^2.112.2",
     "next": "16.3.0",
     "react": "19.2.8",

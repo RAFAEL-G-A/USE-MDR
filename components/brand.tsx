@@ -6,6 +6,7 @@ export function Brand() {
   return (
     <Link
       href="/"
+      prefetch={false}
       className="block w-64 sm:w-72"
       aria-label="USE MDR - início"
     >

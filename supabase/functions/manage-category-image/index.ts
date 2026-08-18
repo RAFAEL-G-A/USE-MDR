@@ -28,7 +28,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
-    assertInventoryAccess(context);
+    await assertInventoryAccess(context);
     const contentType = request.headers.get("content-type") ?? "";
     if (!contentType.includes("multipart/form-data")) {
       return json(request, { error: "Envie os dados no formato multipart/form-data." }, 415);
