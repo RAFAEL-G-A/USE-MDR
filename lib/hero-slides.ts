@@ -6,6 +6,7 @@ type HeroSlideRow = {
   eyebrow: string;
   title: string;
   description: string;
+  fade_enabled: boolean;
 };
 
 export type HeroSlide = {
@@ -14,6 +15,7 @@ export type HeroSlide = {
   eyebrow: string;
   title: string;
   description: string;
+  fadeEnabled: boolean;
 };
 
 export async function getHeroSlides(): Promise<HeroSlide[]> {
@@ -22,7 +24,7 @@ export async function getHeroSlides(): Promise<HeroSlide[]> {
 
   const { data, error } = await supabase
     .from("hero_slides")
-    .select("slot, image_url, eyebrow, title, description")
+    .select("slot, image_url, eyebrow, title, description, fade_enabled")
     .not("image_url", "is", null)
     .order("slot", { ascending: true })
     .limit(4)
@@ -41,6 +43,6 @@ export async function getHeroSlides(): Promise<HeroSlide[]> {
       eyebrow: slide.eyebrow,
       title: slide.title,
       description: slide.description,
+      fadeEnabled: slide.fade_enabled ?? true,
     }));
 }
-
