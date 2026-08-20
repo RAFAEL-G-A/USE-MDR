@@ -31,7 +31,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
-    assertInventoryAccess(context);
+    await assertInventoryAccess(context);
 
     const contentType = request.headers.get("content-type") ?? "";
     if (!contentType.includes("multipart/form-data")) {
@@ -48,7 +48,7 @@ Deno.serve(async (request) => {
 
     const { data: existing, error: readError } = await context.adminClient
       .from("hero_slides")
-      .select("slot, image_url, image_path, eyebrow, title, description")
+      .select("slot, image_url, image_path, eyebrow, title, description, fade_enabled")
       .eq("slot", slot)
       .maybeSingle();
     if (readError) throw new Error(`Não foi possível carregar o destaque: ${readError.message}`);
@@ -72,6 +72,7 @@ Deno.serve(async (request) => {
     const eyebrow = readText(formData, "eyebrow");
     const title = readText(formData, "title");
     const description = readText(formData, "description");
+    const fadeEnabled = readText(formData, "fade_enabled") !== "false";
     const image = formData.get("image");
 
     if (eyebrow.length > 60 || title.length > 120 || description.length > 300) {
@@ -113,9 +114,10 @@ Deno.serve(async (request) => {
         eyebrow,
         title,
         description,
+        fade_enabled: fadeEnabled,
         updated_at: new Date().toISOString(),
       }, { onConflict: "slot" })
-      .select("slot, image_url, eyebrow, title, description")
+      .select("slot, image_url, eyebrow, title, description, fade_enabled")
       .single();
 
     if (upsertError) {
@@ -135,4 +137,3 @@ Deno.serve(async (request) => {
     return json(request, { error: message }, 401);
   }
 });
-

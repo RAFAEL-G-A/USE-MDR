@@ -13,6 +13,7 @@ type AdminHeroSlide = {
   eyebrow: string;
   title: string;
   description: string;
+  fadeEnabled: boolean;
 };
 
 type Feedback =
@@ -27,6 +28,7 @@ type SlideResponse = {
     eyebrow: string;
     title: string;
     description: string;
+    fade_enabled: boolean;
   };
 };
 
@@ -37,6 +39,7 @@ function emptySlides(): AdminHeroSlide[] {
     eyebrow: "",
     title: "",
     description: "",
+    fadeEnabled: true,
   }));
 }
 
@@ -55,6 +58,7 @@ export function AdminHeroSlides() {
   const [eyebrow, setEyebrow] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [fadeEnabled, setFadeEnabled] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -72,7 +76,7 @@ export function AdminHeroSlides() {
 
     void supabase
       .from("hero_slides")
-      .select("slot, image_url, eyebrow, title, description")
+      .select("slot, image_url, eyebrow, title, description, fade_enabled")
       .order("slot", { ascending: true })
       .then(({ data }) => {
         if (cancelled) return;
@@ -85,6 +89,7 @@ export function AdminHeroSlides() {
               eyebrow: item.eyebrow,
               title: item.title,
               description: item.description,
+              fadeEnabled: item.fade_enabled ?? true,
             };
           }
         }
@@ -92,6 +97,7 @@ export function AdminHeroSlides() {
         setEyebrow(nextSlides[0].eyebrow);
         setTitle(nextSlides[0].title);
         setDescription(nextSlides[0].description);
+        setFadeEnabled(nextSlides[0].fadeEnabled);
         setLoading(false);
       });
 
@@ -112,6 +118,7 @@ export function AdminHeroSlides() {
     setEyebrow(selected.eyebrow);
     setTitle(selected.title);
     setDescription(selected.description);
+    setFadeEnabled(selected.fadeEnabled);
     setImageFile(null);
     setFeedback(null);
   }
@@ -136,6 +143,7 @@ export function AdminHeroSlides() {
     requestData.set("eyebrow", eyebrow.trim());
     requestData.set("title", title.trim());
     requestData.set("description", description.trim());
+    requestData.set("fade_enabled", String(fadeEnabled));
     if (imageFile) requestData.set("image", imageFile);
 
     const { data, error } = await supabase.functions.invoke<SlideResponse>("manage-hero-slide", {
@@ -158,7 +166,9 @@ export function AdminHeroSlides() {
       eyebrow: saved.eyebrow,
       title: saved.title,
       description: saved.description,
+      fadeEnabled: saved.fade_enabled ?? true,
     } : slide));
+    setFadeEnabled(saved.fade_enabled ?? true);
     setImageFile(null);
     setFeedback({ type: "success", message: `Destaque ${activeSlot} salvo e publicado na página inicial.` });
     setSaving(false);
@@ -182,6 +192,7 @@ export function AdminHeroSlides() {
       setEyebrow("");
       setTitle("");
       setDescription("");
+      setFadeEnabled(true);
       setImageFile(null);
       setFeedback({ type: "success", message: `Destaque ${activeSlot} removido da página inicial.` });
     }
@@ -194,7 +205,7 @@ export function AdminHeroSlides() {
         <p className="text-xs font-extrabold tracking-[0.18em] text-brand">DESTAQUE DA PÁGINA INICIAL</p>
         <h2 className="mt-2 font-serif text-3xl sm:text-4xl">Carrossel de campanhas</h2>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-          Cadastre até quatro imagens. Cada posição sem imagem fica oculta; se todas estiverem vazias, o carrossel não aparece na loja.
+          Cadastre até quatro imagens e escolha individualmente se cada slide deve receber o esmaecimento para destacar os textos.
         </p>
       </div>
 
@@ -229,19 +240,31 @@ export function AdminHeroSlides() {
             <HeroField label="Descrição" htmlFor="hero-description">
               <textarea id="hero-description" value={description} onChange={(event) => setDescription(event.target.value)} rows={4} maxLength={300} className="form-control resize-y" placeholder="Texto complementar da campanha." />
             </HeroField>
+            <div className="rounded-2xl border border-brand-border bg-brand-soft/30 p-4">
+              <label htmlFor="hero-fade" className="flex cursor-pointer items-center gap-3">
+                <input id="hero-fade" type="checkbox" checked={fadeEnabled} onChange={(event) => setFadeEnabled(event.target.checked)} className="h-5 w-5 accent-brand" />
+                <span>
+                  <strong className="block text-sm text-foreground">Esmaecer imagem</strong>
+                  <span className="mt-1 block text-xs leading-5 text-muted">Aplica o degradê claro no lado do texto somente neste slide.</span>
+                </span>
+              </label>
+            </div>
           </div>
 
           <div>
             <HeroField label="Imagem do destaque" htmlFor="hero-image">
               <label htmlFor="hero-image" className="relative mt-2 flex aspect-[4/3] cursor-pointer items-center justify-center overflow-hidden rounded-[1.75rem] border border-dashed border-brand-border bg-brand-soft/50 text-center transition-colors hover:bg-brand-soft">
                 {preview ? (
-                  <Image src={preview} alt={`Prévia do destaque ${activeSlot}`} fill unoptimized={Boolean(localPreview)} className="object-cover" />
+                  <>
+                    <Image src={preview} alt={`Prévia do destaque ${activeSlot}`} fill unoptimized={Boolean(localPreview)} className="object-cover" />
+                    {fadeEnabled && <span className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,234,241,0.98)_0%,rgba(255,225,235,0.9)_38%,rgba(255,218,229,0.28)_65%,rgba(255,218,229,0)_100%)]" aria-hidden="true" />}
+                  </>
                 ) : (
                   <span className="max-w-52 px-6 text-sm leading-6 text-muted">Toque para escolher a imagem deste slide.</span>
                 )}
               </label>
               <input id="hero-image" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} />
-              <p className="mt-2 text-xs leading-5 text-muted">Máximo de 5 MB. Prefira uma imagem ampla com espaço para o texto no lado esquerdo.</p>
+              <p className="mt-2 text-xs leading-5 text-muted">Máximo de 5 MB. O esmaecimento pode ser ligado ou desligado separadamente em cada slide.</p>
             </HeroField>
           </div>
 

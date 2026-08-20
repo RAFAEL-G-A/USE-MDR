@@ -8,7 +8,7 @@ import {
 
 const CODE_LIFETIME_MINUTES = 10;
 const RESEND_COOLDOWN_SECONDS = 60;
-const MAX_REQUESTS_PER_HOUR = 5;
+const MAX_REQUESTS_PER_HOUR = 20;
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -34,6 +34,7 @@ Deno.serve(async (request) => {
       .from("admin_email_challenges")
       .select("created_at")
       .eq("user_id", user.id)
+      .eq("session_id", sessionId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

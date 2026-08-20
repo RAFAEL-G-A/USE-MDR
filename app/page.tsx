@@ -37,10 +37,10 @@ export default async function Home() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 py-3 md:px-8 md:py-4">
           <Brand />
           <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal">
-            <Link href="/" className="text-brand">Início</Link>
-            <Link href="/catalogo" className="transition-colors hover:text-brand">Buscar</Link>
-            <Link href="/favoritos" className="transition-colors hover:text-brand">Favoritos</Link>
-            <Link href="/carrinho" className="transition-colors hover:text-brand">Carrinho</Link>
+            <Link href="/" prefetch={false} className="text-brand">Início</Link>
+            <Link href="/catalogo" prefetch={false} className="transition-colors hover:text-brand">Buscar</Link>
+            <Link href="/favoritos" prefetch={false} className="transition-colors hover:text-brand">Favoritos</Link>
+            <Link href="/carrinho" prefetch={false} className="transition-colors hover:text-brand">Carrinho</Link>
           </nav>
         </div>
       </header>
@@ -51,12 +51,12 @@ export default async function Home() {
         <section className={heroSlides.length ? "pt-12 sm:pt-16" : "pt-4 sm:pt-6"} aria-labelledby="categories-title">
           <div className="mb-6 flex items-end justify-between gap-5">
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">EXPLORE</p><h2 id="categories-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">Categorias</h2></div>
-            <Link href="/catalogo" className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todas →</Link>
+            <Link href="/catalogo" prefetch={false} className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todas →</Link>
           </div>
           <ul className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible md:px-0">
             {categories.map((category) => (
               <li key={category.key} className="w-24 shrink-0 snap-start text-center md:w-auto">
-                <Link href={{ pathname: "/catalogo", query: { categoria: category.filterCategory, ...(category.filterSubcategory ? { subcategoria: category.filterSubcategory } : {}) }, hash: "produtos" }} className="group block">
+                <Link href={{ pathname: "/catalogo", query: { categoria: category.filterCategory, ...(category.filterSubcategory ? { subcategoria: category.filterSubcategory } : {}) }, hash: "produtos" }} prefetch={false} className="group block">
                   <span className="relative mx-auto block aspect-square w-20 overflow-hidden rounded-full border border-brand-border bg-brand-soft shadow-sm sm:w-24 md:w-full md:max-w-28">
                     <Image src={category.image} alt="" fill sizes="112px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
                   </span>
@@ -70,7 +70,7 @@ export default async function Home() {
         <section id="lancamentos" className="pt-14 sm:pt-20" aria-labelledby="new-products-title">
           <div className="mb-6 flex items-end justify-between gap-5 sm:mb-8">
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">ACABOU DE CHEGAR</p><h2 id="new-products-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">Lançamentos</h2></div>
-            <Link href="/catalogo#produtos" className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todos →</Link>
+            <Link href="/catalogo#produtos" prefetch={false} className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todos →</Link>
           </div>
           <div className={`mx-auto grid gap-x-3 gap-y-8 sm:gap-6 ${launchGridClassName}`}>
             {products.map((product) => <ProductCard key={product.id} product={product} showNew />)}

@@ -27,7 +27,7 @@ export function MobileNavigation({ active }: { active: ActivePage }) {
         const content = <><span className="relative"><Icon className="size-6" />{badge > 0 && <span className="absolute -right-3 -top-2 flex min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[0.58rem] font-extrabold leading-5 text-white">{badge > 99 ? "99+" : badge}</span>}</span>{label}</>;
 
         return enabled ? (
-          <Link key={key} href={href} aria-current={isActive ? "page" : undefined} className={classes}>{content}</Link>
+          <Link key={key} href={href} prefetch={false} aria-current={isActive ? "page" : undefined} className={classes}>{content}</Link>
         ) : (
           <span key={key} className={`${classes} cursor-not-allowed opacity-55`} title={`${label} estará disponível em breve`}>{content}</span>
         );

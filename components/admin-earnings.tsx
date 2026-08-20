@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { FeedbackMessage, FormField } from "@/components/admin-product-form";
+import { STORE_TIME_ZONE, formatStoreDateTime, storeDateTimeInputValue, storeInputToIso, storePeriodRange } from "@/lib/store-time";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Product = { id: string; name: string; price: number; stock: number };
@@ -41,37 +42,8 @@ function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
-function localDateTimeValue() {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
-}
-
 function periodRange(period: Period) {
-  const now = new Date();
-  const from = new Date(now);
-  const to = new Date(now);
-  if (period === "today") {
-    from.setHours(0, 0, 0, 0);
-    to.setDate(to.getDate() + 1);
-    to.setHours(0, 0, 0, 0);
-  } else if (period === "7days") {
-    from.setDate(from.getDate() - 6);
-    from.setHours(0, 0, 0, 0);
-    to.setDate(to.getDate() + 1);
-    to.setHours(0, 0, 0, 0);
-  } else if (period === "month") {
-    from.setDate(1);
-    from.setHours(0, 0, 0, 0);
-    to.setMonth(to.getMonth() + 1, 1);
-    to.setHours(0, 0, 0, 0);
-  } else {
-    from.setMonth(from.getMonth() - 11, 1);
-    from.setHours(0, 0, 0, 0);
-    to.setMonth(to.getMonth() + 1, 1);
-    to.setHours(0, 0, 0, 0);
-  }
-  return { from: from.toISOString(), to: to.toISOString() };
+  return storePeriodRange(period);
 }
 
 async function functionErrorMessage(error: unknown, fallback: string) {
@@ -92,7 +64,7 @@ export function AdminEarnings() {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
-  const [soldAt, setSoldAt] = useState(localDateTimeValue);
+  const [soldAt, setSoldAt] = useState(storeDateTimeInputValue);
   const [refreshKey, setRefreshKey] = useState(0);
   const [confirmVoidId, setConfirmVoidId] = useState<string | null>(null);
   const [workingSaleId, setWorkingSaleId] = useState<string | null>(null);
@@ -164,7 +136,7 @@ export function AdminEarnings() {
         unit_price: price,
         payment_method: formData.get("payment_method"),
         payment_status: formData.get("payment_status"),
-        sold_at: new Date(soldAt).toISOString(),
+        sold_at: storeInputToIso(soldAt),
         notes: String(formData.get("notes") ?? "").trim(),
       },
     });
@@ -174,7 +146,7 @@ export function AdminEarnings() {
       setFeedback({ type: "success", message: "Venda registrada e estoque atualizado automaticamente." });
       setSelectedProductId("");
       setUnitPrice("");
-      setSoldAt(localDateTimeValue());
+      setSoldAt(storeDateTimeInputValue());
       form.reset();
       refresh();
     }
@@ -280,10 +252,10 @@ function buildChart(sales: Sale[], period: Period): ChartItem[] {
   for (const sale of sales) {
     const date = new Date(sale.sold_at);
     const key = period === "today"
-      ? `${String(date.getHours()).padStart(2, "0")}h`
+      ? `${new Intl.DateTimeFormat("pt-BR", { timeZone: STORE_TIME_ZONE, hour: "2-digit", hourCycle: "h23" }).format(date)}h`
       : period === "year"
-        ? date.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(" de ", "/")
-        : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+        ? date.toLocaleDateString("pt-BR", { timeZone: STORE_TIME_ZONE, month: "short", year: "2-digit" }).replace(" de ", "/")
+        : date.toLocaleDateString("pt-BR", { timeZone: STORE_TIME_ZONE, day: "2-digit", month: "2-digit" });
     const item = groups.get(key) ?? { label: key, received: 0, pending: 0 };
     item[sale.payment_status === "paid" ? "received" : "pending"] += sale.total_amount;
     groups.set(key, item);
@@ -304,7 +276,7 @@ function SaleRow({ sale, busy, confirmVoid, onSettle, onVoid }: { sale: Sale; bu
   const [method, setMethod] = useState<PaymentMethod>(sale.payment_method);
   const voided = Boolean(sale.voided_at);
   return <article className={`rounded-2xl border p-4 ${voided ? "border-slate-200 bg-slate-50 opacity-65" : "border-brand-border/80"}`}>
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-extrabold">{sale.product_name}</p><p className="mt-1 text-xs text-muted">{new Date(sale.sold_at).toLocaleString("pt-BR")} · {sale.quantity} × {money(sale.unit_price)}</p>{sale.notes && <p className="mt-2 text-xs text-muted">{sale.notes}</p>}</div><div className="text-right"><p className="font-extrabold text-brand">{money(sale.total_amount)}</p><p className={`mt-1 text-[0.65rem] font-extrabold uppercase ${voided ? "text-slate-500" : sale.payment_status === "paid" ? "text-emerald-700" : "text-amber-700"}`}>{voided ? "Cancelada" : sale.payment_status === "paid" ? `Recebido · ${paymentLabels[sale.payment_method]}` : "A receber"}</p></div></div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-extrabold">{sale.product_name}</p><p className="mt-1 text-xs text-muted">{formatStoreDateTime(sale.sold_at)} · {sale.quantity} × {money(sale.unit_price)}</p>{sale.notes && <p className="mt-2 text-xs text-muted">{sale.notes}</p>}</div><div className="text-right"><p className="font-extrabold text-brand">{money(sale.total_amount)}</p><p className={`mt-1 text-[0.65rem] font-extrabold uppercase ${voided ? "text-slate-500" : sale.payment_status === "paid" ? "text-emerald-700" : "text-amber-700"}`}>{voided ? "Cancelada" : sale.payment_status === "paid" ? `Recebido · ${paymentLabels[sale.payment_method]}` : "A receber"}</p></div></div>
     {!voided && <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-brand-border/60 pt-3">{sale.payment_status === "pending" && <><select value={method} onChange={(event) => setMethod(event.target.value as PaymentMethod)} className="min-h-10 rounded-full border border-brand-border bg-white px-3 text-xs">{Object.entries(paymentLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button type="button" disabled={busy} onClick={() => onSettle(sale, method)} className="min-h-10 rounded-full bg-emerald-600 px-4 text-xs font-bold text-white disabled:opacity-60">Marcar recebido</button></>}<button type="button" disabled={busy} onClick={() => onVoid(sale)} className="ml-auto min-h-10 rounded-full border border-red-200 px-4 text-xs font-bold text-red-600 disabled:opacity-60">{busy ? "Processando..." : confirmVoid ? "Confirmar cancelamento" : "Cancelar venda"}</button></div>}
   </article>;
 }

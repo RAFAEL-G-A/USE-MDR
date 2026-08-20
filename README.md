@@ -1,67 +1,113 @@
-# USE MDR Beauty — Catálogo Web
+# USE MDR — Catálogo Web
 
-Loja virtual responsiva da USE MDR, desenvolvida para navegação principalmente pelo celular e finalização de pedidos pelo WhatsApp.
+Loja virtual responsiva da **USE MDR**, criada para apresentar produtos de
+beleza e transformar o carrinho em um pedido organizado pelo WhatsApp.
 
-- Site público: [use-mdr-beauty.netlify.app](https://use-mdr-beauty.netlify.app)
-- Repositório público: o código da loja pode ser auditado, mas nenhum segredo administrativo é versionado.
-- Clientes navegam, favoritam e montam pedidos sem login.
-- O inventário é alterado exclusivamente pela administradora.
+[Visitar o catálogo da USE MDR](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
-## Recursos
+[Implementações e correções](IMPLEMENTACOES.md) · [Histórico de novidades](NOVIDADES.md)
 
-- catálogo conectado ao Supabase;
-- carrossel da página inicial com até quatro campanhas administráveis;
-- imagens das categorias administráveis, com restauração dos visuais padrão;
-- painel administrativo separado em estoque, destaques e rendimentos;
-- edição completa dos produtos com limpeza automática das imagens substituídas;
-- fluxo de caixa com vendas recebidas/a receber, gráficos e filtros por período;
-- categorias, subcategorias e busca;
-- páginas individuais de produtos;
-- favoritos sem login;
-- carrinho persistente no navegador;
-- alteração de quantidades, subtotais e total;
-- pedido formatado automaticamente para o WhatsApp;
-- layout responsivo com identidade visual própria da USE MDR.
+> Projeto web independente do aplicativo mobile anterior. O produto final é um
+> site responsivo e não gera APK.
 
-## Segurança do inventário
+## Visão do projeto
 
-O catálogo possui leitura pública, mas cadastro, alteração e exclusão são
-protegidos por duas camadas independentes:
+A experiência combina a identidade feminina, sofisticada e editorial da USE
+MDR com uma jornada de compra simples. A cliente navega pelo catálogo, encontra
+os produtos, salva favoritos, monta o carrinho e envia o pedido completo para a
+loja pelo WhatsApp.
 
-1. e-mail e senha da conta administrativa no Supabase Auth;
-2. código aleatório de seis dígitos enviado ao e-mail da administradora.
+Não é necessário criar conta, preencher cadastro, informar dados de pagamento
+ou passar por um checkout tradicional.
 
-O código vence em 10 minutos, aceita no máximo 5 tentativas e libera a API de
-inventário por 30 minutos. A autorização fica vinculada à sessão que concluiu a
-verificação. As políticas RLS do Supabase recusam gravações sem as duas camadas,
-mesmo que alguém tente chamar a API fora da interface do site.
+## Experiência da cliente
 
-```mermaid
-flowchart LR
-  A[Administradora] --> B[Senha no Supabase Auth]
-  B --> C[Edge Function envia código]
-  C --> D[E-mail da administradora]
-  D --> E[Edge Function verifica código]
-  E --> F[Autorização temporária vinculada à sessão]
-  F --> G[APIs administrativas]
-  G --> J[Validação de imagens e dados]
-  J --> K[Storage e tabelas protegidas]
-  H[Clientes] --> I[Leitura pública do catálogo]
-```
+- Home editorial com carrossel de até quatro campanhas;
+- catálogo integrado ao Supabase;
+- categorias e subcategorias de produtos;
+- busca por nome e filtros de navegação;
+- paginação com 15 produtos por página;
+- páginas individuais com descrição formatada e galeria de imagens;
+- favoritos e carrinho preservados no próprio navegador;
+- alteração de quantidades e cálculo automático do total;
+- pedido para o WhatsApp com produtos, quantidades, subtotais e total;
+- seção de lançamentos adaptável à quantidade disponível;
+- acesso direto às redes sociais e informações da loja;
+- interface mobile-first com composição própria para telas maiores.
 
-As chaves privadas, o segredo usado para proteger os códigos e a credencial do
-provedor de e-mail ficam nos Secrets das Edge Functions. Consulte também
-[SECURITY.md](SECURITY.md).
+## Gestão da loja
 
-## Tecnologias
+O projeto inclui uma área administrativa protegida, desenvolvida para organizar
+a operação sem expor dados internos no catálogo público.
 
-- Next.js;
-- TypeScript;
-- Tailwind CSS;
-- Supabase;
-- `localStorage` para carrinho e favoritos.
+- **Estoque:** cadastro, edição e exclusão de produtos, valores, quantidades,
+  categorias, subcategorias e imagens;
+- **Vendas:** venda única ou agrupada, pesquisa de produtos, descontos,
+  diferentes formas de pagamento e correção posterior com histórico;
+- **Destaques:** gerenciamento do carrossel, lançamentos e imagens das
+  categorias;
+- **Finanças:** receitas, despesas, recebimentos, produtos mais vendidos,
+  fechamento por período e relatórios;
+- **Métricas:** visitantes anônimos, sessões, carrinhos levados ao WhatsApp e
+  taxa de conversão.
 
-## Executar localmente
+As imagens enviadas pelo painel são validadas, redimensionadas, comprimidas e
+convertidas automaticamente para WebP. Fotos substituídas também podem ser
+removidas do Storage para evitar acúmulo desnecessário.
+
+## Privacidade e segurança
+
+- O catálogo não exige login das clientes;
+- favoritos e carrinho ficam armazenados localmente no dispositivo;
+- as métricas não registram nome, telefone, e-mail, IP ou mensagem do pedido;
+- operações administrativas são verificadas no servidor;
+- o acesso administrativo utiliza autenticação e uma segunda verificação;
+- tabelas internas são protegidas por regras de acesso no banco;
+- chaves privadas, senhas, tokens e e-mails administrativos não são
+  versionados;
+- arquivos `.env` permanecem fora do Git por meio do `.gitignore`.
+
+Este repositório apresenta publicamente o catálogo e sua arquitetura, mas não
+publica credenciais nem links de acesso administrativo.
+
+## Identidade visual
+
+O projeto preserva a linguagem da marca USE MDR:
+
+- rosa sofisticado, rose gold e fundos claros;
+- tipografia editorial combinada com uma fonte moderna;
+- bastante espaço em branco;
+- cantos arredondados e sombras suaves;
+- cards com destaque para as fotografias dos produtos;
+- navegação confortável no celular e melhor uso da largura no desktop.
+
+## Arquitetura
+
+- **Next.js 16**, React e TypeScript;
+- **Tailwind CSS** para a interface responsiva;
+- **Supabase Postgres** para catálogo, estoque, vendas e informações
+  administrativas;
+- **Supabase Storage** para imagens dos produtos e campanhas;
+- **Supabase Auth e Edge Functions** para operações administrativas protegidas;
+- **Cloudflare Workers** para hospedagem da aplicação web;
+- armazenamento local do navegador para carrinho, favoritos e controle anônimo
+  de sessão.
+
+## Qualidade e testes
+
+O projeto possui verificações automatizadas para:
+
+- TypeScript, lint e build de produção;
+- catálogo, categorias e paginação;
+- carrinho e pedido pelo WhatsApp;
+- vendas únicas, agrupadas, descontos e integridade do estoque;
+- horários comerciais e fechamentos financeiros;
+- formatos de imagem e conversão para WebP;
+- segurança das APIs administrativas;
+- métricas anônimas e controle de duplicidade;
+- responsividade dos principais componentes administrativos.
+
+## Desenvolvimento local
 
 ```bash
 npm install
@@ -70,71 +116,29 @@ npm run dev
 
 Abra [http://localhost:3000](http://localhost:3000).
 
-## Variáveis de ambiente
+Copie `.env.example` para `.env.local` e configure somente as variáveis
+necessárias ao ambiente local. Nunca envie o `.env.local` ao GitHub.
 
-Copie `.env.example` para `.env.local` e configure:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-NEXT_PUBLIC_WHATSAPP_NUMBER=
-```
-
-O número do WhatsApp deve conter somente números, incluindo código do país e DDD.
-
-O arquivo `.env.local` é ignorado pelo Git e não deve ser enviado ao repositório.
-
-## Área administrativa
-
-O acesso antigo em `/admin/produtos` redireciona para o novo painel, dividido em:
-
-- `/admin/estoque`: cadastro e edição de produtos, imagens, descrições, preços e quantidades;
-- `/admin/destaques`: gerenciamento dos quatro slides do carrossel e das imagens de categorias;
-- `/admin/rendimentos`: registro de vendas, recebimentos, gráfico e relatório por período.
-
-Ao registrar uma venda, as unidades são retiradas do estoque. O cancelamento
-devolve as unidades, e uma venda marcada como “a receber” pode ser baixada depois.
-O acesso utiliza Supabase Auth, código por e-mail e APIs protegidas no servidor.
-
-Para preparar o Supabase:
-
-1. crie a conta da administradora em **Authentication > Users**;
-2. abra `supabase/admin-catalog-setup.sql`;
-3. substitua `ADMIN_EMAIL_AQUI` pelo e-mail da conta;
-4. execute o arquivo no **SQL Editor** do Supabase;
-5. configure os Secrets indicados em `supabase/functions/.env.example`;
-6. publique as funções `request-admin-code`, `verify-admin-code`,
-   `create-product`, `manage-product`, `manage-hero-slide`, `manage-category-image` e `manage-sales`;
-7. saia e entre novamente na área administrativa para atualizar a sessão.
-
-### API de cadastro
-
-A Edge Function `create-product` recebe uma única requisição autenticada em
-`multipart/form-data` com nome, preço, categoria, subcategoria, descrição,
-estoque e imagem. Ela valida a taxonomia, envia a foto ao bucket `products` e
-insere o registro na tabela `products`. Se a inserção falhar, o upload é
-removido automaticamente.
-
-A Edge Function `manage-hero-slide` atualiza uma das quatro posições do
-carrossel, substitui ou remove sua imagem e salva os três textos da campanha.
-Somente registros que possuem imagem são retornados para a página inicial.
-
-A Edge Function `manage-product` edita e exclui produtos. Quando uma foto é
-substituída ou o produto é apagado, o arquivo antigo também é removido do Storage.
-
-A Edge Function `manage-category-image` substitui as imagens das sete categorias,
-remove o arquivo anterior e permite restaurar os visuais padrão do projeto.
-
-A Edge Function `manage-sales` registra vendas e consulta o caixa. As funções SQL
-fazem a baixa e a devolução do estoque na mesma transação da movimentação.
-
-## Verificações
+Comandos principais:
 
 ```bash
 npm run lint
+npm run test:all
 npm run build
 ```
 
-## Hospedagem
+## Evolução do projeto
 
-O projeto pode ser publicado em uma plataforma compatível com Next.js. A opção gratuita considerada inicialmente é a Netlify, configurando nela as mesmas variáveis de ambiente.
+As entregas técnicas estão organizadas em
+[IMPLEMENTACOES.md](IMPLEMENTACOES.md), enquanto as ideias e novidades da loja
+são apresentadas cronologicamente em [NOVIDADES.md](NOVIDADES.md).
+
+## Escopo atual
+
+O projeto foi planejado como catálogo e ferramenta de apoio à loja. Nesta fase,
+ele não inclui gateway de pagamento, checkout tradicional, cadastro obrigatório
+de clientes, perfil público de usuário ou aplicativo para lojas mobile.
+
+---
+
+**USE MDR — Maquiagens e acessórios**

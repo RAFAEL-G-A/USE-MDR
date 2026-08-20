@@ -10,10 +10,13 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     ".netlify/**",
+    ".open-next/**",
+    ".wrangler/**",
     "supabase/functions/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "cloudflare-env.d.ts",
   ]),
 ]);
 

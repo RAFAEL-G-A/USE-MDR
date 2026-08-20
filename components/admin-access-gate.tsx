@@ -17,42 +17,48 @@ async function functionErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function sessionHasEmailVerification(session: Session | null) {
-  if (!session) return false;
-  try {
-    const encodedPayload = session.access_token.split(".")[1];
-    const normalizedPayload = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
-    const payload = JSON.parse(atob(normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, "="))) as { session_id?: string };
-    const metadata = session.user.app_metadata;
-    const verifiedUntil = Date.parse(metadata.inventory_email_verified_until ?? "");
-    return metadata.inventory_email_verified_session_id === payload.session_id && Number.isFinite(verifiedUntil) && verifiedUntil > Date.now();
-  } catch {
-    return false;
-  }
-}
-
 export function AdminAccessGate({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [checkingAccess, setCheckingAccess] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const [requestingCode, setRequestingCode] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const user = session?.user ?? null;
-  const emailVerified = sessionHasEmailVerification(session);
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setCheckingSession(false);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    let cancelled = false;
+
+    async function synchronizeAccess(nextSession: Session | null) {
+      if (cancelled) return;
       setSession(nextSession);
       setCheckingSession(false);
+      if (!nextSession) {
+        setEmailVerified(false);
+        setCheckingAccess(false);
+        return;
+      }
+
+      setCheckingAccess(true);
+      const { data, error } = await supabase.functions.invoke("check-admin-access", { body: {} });
+      if (cancelled) return;
+      setEmailVerified(!error && data?.authorized === true);
+      setCheckingAccess(false);
+    }
+
+    void supabase.auth.getSession().then(({ data }) => synchronizeAccess(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      window.setTimeout(() => void synchronizeAccess(nextSession), 0);
     });
-    return () => data.subscription.unsubscribe();
+
+    return () => {
+      cancelled = true;
+      data.subscription.unsubscribe();
+    };
   }, [supabase]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -68,7 +74,8 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
+    setEmailVerified(false);
     setCodeSent(false);
     setFeedback(null);
   }
@@ -92,24 +99,23 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
     setFeedback(null);
     const formData = new FormData(event.currentTarget);
     const code = String(formData.get("code") ?? "").trim();
-    const { error } = await supabase.functions.invoke("verify-admin-code", { body: { code } });
+    const { data, error } = await supabase.functions.invoke("verify-admin-code", { body: { code } });
     if (error) {
       setFeedback({ type: "error", message: await functionErrorMessage(error, "Código inválido ou expirado.") });
       setVerifyingCode(false);
       return;
     }
-    const { data, error: refreshError } = await supabase.auth.refreshSession();
-    if (refreshError || !data.session || !sessionHasEmailVerification(data.session)) {
-      setFeedback({ type: "error", message: "O código foi aceito, mas a autorização não pôde ser atualizada. Entre novamente." });
+    if (data?.ok !== true) {
+      setFeedback({ type: "error", message: "O código foi aceito, mas a autorização não pôde ser confirmada. Tente novamente." });
     } else {
-      setSession(data.session);
+      setEmailVerified(true);
       setCodeSent(false);
       setFeedback(null);
     }
     setVerifyingCode(false);
   }
 
-  if (checkingSession) return <AccessCard><p className="text-sm text-muted">Verificando acesso administrativo...</p></AccessCard>;
+  if (checkingSession || checkingAccess) return <AccessCard><p className="text-sm text-muted">Verificando acesso administrativo...</p></AccessCard>;
 
   if (!user) {
     return (

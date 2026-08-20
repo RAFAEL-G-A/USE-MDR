@@ -4,9 +4,8 @@ import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { catalogCategories, catalogTaxonomy, type CatalogCategory } from "@/lib/catalog-taxonomy";
+import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 type Feedback = { type: "success" | "error"; message: string } | null;
 
@@ -26,28 +25,68 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const formRef = useRef<HTMLFormElement>(null);
   const [saving, setSaving] = useState(false);
+  const [processingImages, setProcessingImages] = useState(false);
   const [category, setCategory] = useState<CatalogCategory>("Lábios");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [primaryImage, setPrimaryImage] = useState<CompressedProductImage | null>(null);
+  const [galleryImages, setGalleryImages] = useState<CompressedProductImage[]>([]);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const imagePreview = useMemo(() => imageFile ? URL.createObjectURL(imageFile) : null, [imageFile]);
+  const imagePreview = useMemo(() => primaryImage ? URL.createObjectURL(primaryImage.file) : null, [primaryImage]);
+  const galleryPreviews = useMemo(() => galleryImages.map((item) => URL.createObjectURL(item.file)), [galleryImages]);
 
   useEffect(() => () => {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
   }, [imagePreview]);
+  useEffect(() => () => {
+    galleryPreviews.forEach((url) => URL.revokeObjectURL(url));
+  }, [galleryPreviews]);
+
+  async function preparePrimaryImage(file: File | null) {
+    if (!file) return;
+    setProcessingImages(true);
+    setFeedback(null);
+    try {
+      setPrimaryImage(await compressProductImage(file));
+    } catch (error) {
+      setFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar a imagem." });
+    } finally {
+      setProcessingImages(false);
+    }
+  }
+
+  async function prepareGalleryImages(files: FileList | null) {
+    if (!files?.length) return;
+    const available = MAX_PRODUCT_IMAGES - 1 - galleryImages.length;
+    if (files.length > available) {
+      setFeedback({ type: "error", message: `Você pode adicionar mais ${available} ${available === 1 ? "imagem" : "imagens"}.` });
+      return;
+    }
+    setProcessingImages(true);
+    setFeedback(null);
+    try {
+      const compressed: CompressedProductImage[] = [];
+      for (const file of Array.from(files)) compressed.push(await compressProductImage(file));
+      setGalleryImages((current) => [...current, ...compressed]);
+    } catch (error) {
+      setFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar as imagens." });
+    } finally {
+      setProcessingImages(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFeedback(null);
-    if (!imageFile || !imageFile.type.startsWith("image/") || imageFile.size > MAX_IMAGE_SIZE) {
-      setFeedback({ type: "error", message: "Selecione uma imagem JPG, PNG ou WebP de até 5 MB." });
+    if (!primaryImage || primaryImage.file.type !== "image/webp") {
+      setFeedback({ type: "error", message: "Selecione a imagem principal do produto." });
       return;
     }
 
     const formData = new FormData(event.currentTarget);
     const name = String(formData.get("name") ?? "").trim();
     const price = normalizePrice(String(formData.get("price") ?? ""));
+    const costPrice = normalizePrice(String(formData.get("cost_price") ?? "0"));
     const stock = Number(formData.get("stock"));
-    if (!name || !Number.isFinite(price) || price <= 0 || !Number.isInteger(stock) || stock < 0) {
+    if (!name || !Number.isFinite(price) || price <= 0 || !Number.isFinite(costPrice) || costPrice < 0 || !Number.isInteger(stock) || stock < 0) {
       setFeedback({ type: "error", message: "Informe nome, preço e estoque válidos." });
       return;
     }
@@ -56,12 +95,14 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
     const requestData = new FormData();
     requestData.set("name", name);
     requestData.set("price", String(price));
+    requestData.set("cost_price", String(costPrice));
     requestData.set("category", category);
     requestData.set("subcategory", String(formData.get("subcategory") ?? ""));
     requestData.set("description", String(formData.get("description") ?? "").trim());
     requestData.set("stock", String(stock));
     requestData.set("is_launch", String(formData.get("is_launch") === "on"));
-    requestData.set("image", imageFile);
+    requestData.set("image", primaryImage.file);
+    galleryImages.forEach((item) => requestData.append("images", item.file));
 
     const { error } = await supabase.functions.invoke("create-product", { body: requestData });
     if (error) {
@@ -69,7 +110,8 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
     } else {
       formRef.current?.reset();
       setCategory("Lábios");
-      setImageFile(null);
+      setPrimaryImage(null);
+      setGalleryImages([]);
       setFeedback({ type: "success", message: `${name} foi adicionado ao estoque.` });
       onCreated?.();
     }
@@ -83,10 +125,12 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
       <form ref={formRef} onSubmit={handleSubmit} className="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-5">
           <FormField label="Nome do produto" htmlFor="product-name"><input id="product-name" name="name" required maxLength={120} className="form-control" placeholder="Ex.: Gloss Crystal Shine" /></FormField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <FormField label="Preço" htmlFor="product-price"><input id="product-price" name="price" required inputMode="decimal" className="form-control" placeholder="29,90" /></FormField>
+            <FormField label="Custo" htmlFor="product-cost"><input id="product-cost" name="cost_price" required inputMode="decimal" defaultValue="0,00" className="form-control" placeholder="12,00" /></FormField>
             <FormField label="Estoque" htmlFor="product-stock"><input id="product-stock" name="stock" type="number" required min={0} step={1} defaultValue={1} className="form-control" /></FormField>
           </div>
+          <p className="-mt-3 text-xs text-muted">O custo é confidencial e aparece somente no painel administrativo.</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Categoria" htmlFor="product-category"><select id="product-category" name="category" value={category} onChange={(event) => setCategory(event.target.value as CatalogCategory)} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField>
             <FormField label="Subcategoria" htmlFor="product-subcategory"><select id="product-subcategory" name="subcategory" className="form-control">{catalogTaxonomy[category].map((item) => <option key={item}>{item}</option>)}</select></FormField>
@@ -98,12 +142,19 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
           <label htmlFor="product-image" className="relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-[1.75rem] border border-dashed border-brand-border bg-brand-soft/50 text-center">
             {imagePreview ? <Image src={imagePreview} alt="Prévia da imagem" fill unoptimized className="object-cover" /> : <span className="max-w-48 px-6 text-sm leading-6 text-muted">Toque para escolher uma foto.</span>}
           </label>
-          <input id="product-image" type="file" required accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} />
-          <p className="mt-2 text-xs text-muted">Máximo de 5 MB. Prefira uma imagem quadrada.</p>
+          <input id="product-image" type="file" required accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => void preparePrimaryImage(event.target.files?.[0] ?? null)} />
+          <p className="mt-2 text-xs text-muted">A foto é redimensionada, comprimida e convertida para WebP antes do envio.</p>
+          {primaryImage && <p className="mt-1 text-xs font-bold text-emerald-700">{formatImageSize(primaryImage.originalSize)} → {formatImageSize(primaryImage.file.size)} · {primaryImage.width}×{primaryImage.height}px</p>}
+          <div className="mt-5 border-t border-brand-border/70 pt-5">
+            <div className="flex items-center justify-between gap-3"><span className="text-xs font-extrabold uppercase tracking-[0.1em]">Imagens adicionais</span><span className="text-xs text-muted">{galleryImages.length}/3</span></div>
+            {galleryImages.length > 0 && <div className="mt-3 grid grid-cols-3 gap-2">{galleryImages.map((item, index) => <div key={`${item.file.name}-${index}`} className="relative aspect-square overflow-hidden rounded-xl border border-brand-border"><Image src={galleryPreviews[index]} alt={`Prévia adicional ${index + 1}`} fill unoptimized className="object-cover" /><button type="button" onClick={() => setGalleryImages((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remover imagem adicional ${index + 1}`} className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-brand shadow">×</button></div>)}</div>}
+            {galleryImages.length < MAX_PRODUCT_IMAGES - 1 && <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-brand-border bg-brand-soft/40 px-4 text-center text-xs font-bold text-brand">Adicionar fotos<input type="file" multiple accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => { void prepareGalleryImages(event.target.files); event.currentTarget.value = ""; }} /></label>}
+            <p className="mt-2 text-xs leading-5 text-muted">Até três fotos extras. Elas aparecerão somente ao abrir o produto.</p>
+          </div>
         </FormField>
         <div className="lg:col-span-2">
           {feedback && <FeedbackMessage feedback={feedback} />}
-          <button type="submit" disabled={saving} className="mt-5 min-h-14 rounded-full bg-brand px-7 text-sm font-extrabold text-white shadow-lg shadow-brand/20 disabled:opacity-60">{saving ? "SALVANDO..." : "ADICIONAR PRODUTO"}</button>
+          <button type="submit" disabled={saving || processingImages} className="mt-5 min-h-14 rounded-full bg-brand px-7 text-sm font-extrabold text-white shadow-lg shadow-brand/20 disabled:opacity-60">{processingImages ? "OTIMIZANDO IMAGENS..." : saving ? "SALVANDO..." : "ADICIONAR PRODUTO"}</button>
         </div>
       </form>
     </section>

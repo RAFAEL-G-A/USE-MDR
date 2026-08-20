@@ -7,7 +7,7 @@ import {
 } from "../_shared/admin-auth.ts";
 
 const MAX_ATTEMPTS = 5;
-const AUTHORIZATION_MINUTES = 30;
+const AUTHORIZATION_HOURS = 5;
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -55,15 +55,18 @@ Deno.serve(async (request) => {
       );
     }
 
-    const verifiedUntil = new Date(Date.now() + AUTHORIZATION_MINUTES * 60 * 1000).toISOString();
-    const { error: updateUserError } = await adminClient.auth.admin.updateUserById(user.id, {
-      app_metadata: {
-        ...user.app_metadata,
-        inventory_email_verified_session_id: sessionId,
-        inventory_email_verified_until: verifiedUntil,
-      },
+    const verifiedUntil = new Date(
+      Date.now() + AUTHORIZATION_HOURS * 60 * 60 * 1000,
+    ).toISOString();
+    const { error: sessionError } = await adminClient.from("admin_verified_sessions").upsert({
+      user_id: user.id,
+      session_id: sessionId,
+      expires_at: verifiedUntil,
+      verified_at: new Date().toISOString(),
+    }, {
+      onConflict: "user_id,session_id",
     });
-    if (updateUserError) throw updateUserError;
+    if (sessionError) throw sessionError;
 
     await adminClient
       .from("admin_email_challenges")

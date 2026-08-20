@@ -76,15 +76,21 @@ export async function authenticateAdmin(request: Request): Promise<AdminContext>
   return { adminClient, sessionId, user };
 }
 
-export function assertInventoryAccess(context: AdminContext) {
-  const metadata = context.user.app_metadata;
-  const verifiedUntil = Date.parse(metadata.inventory_email_verified_until ?? "");
+export async function getInventoryAccess(context: AdminContext) {
+  const { data, error } = await context.adminClient
+    .from("admin_verified_sessions")
+    .select("expires_at")
+    .eq("user_id", context.user.id)
+    .eq("session_id", context.sessionId)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
 
-  if (
-    metadata.inventory_email_verified_session_id !== context.sessionId ||
-    !Number.isFinite(verifiedUntil) ||
-    verifiedUntil <= Date.now()
-  ) {
+  if (error) throw error;
+  return data?.expires_at ? { verifiedUntil: data.expires_at } : null;
+}
+
+export async function assertInventoryAccess(context: AdminContext) {
+  if (!(await getInventoryAccess(context))) {
     throw new Error("Confirme o código enviado por e-mail antes de alterar o inventário.");
   }
 }

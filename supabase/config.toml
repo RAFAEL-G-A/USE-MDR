@@ -4,6 +4,9 @@ verify_jwt = false
 [functions.verify-admin-code]
 verify_jwt = false
 
+[functions.check-admin-access]
+verify_jwt = false
+
 [functions.create-product]
 verify_jwt = false
 
@@ -17,4 +20,16 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.manage-category-image]
+verify_jwt = false
+
+[functions.manage-finances]
+verify_jwt = false
+
+[functions.run-financial-reports]
+verify_jwt = false
+
+[functions.track-store-event]
+verify_jwt = false
+
+[functions.manage-analytics]
 verify_jwt = false
