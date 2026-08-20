@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { FeedbackMessage, FormField } from "@/components/admin-product-form";
-import { groupSaleRows, parseBrazilianCurrency, saleCartTotal, upsertSaleCartItem, validateDiscountedTotal, type SaleCartItem, type SaleCorrection, type SaleRow } from "@/lib/admin-sales";
+import { filterProductsByName, groupSaleRows, parseBrazilianCurrency, saleCartTotal, upsertSaleCartItem, validateDiscountedTotal, type SaleCartItem, type SaleCorrection, type SaleRow } from "@/lib/admin-sales";
 import { formatStoreDateTime, storeDateKey, storeDateKeyDaysAgo, storeDateTimeInputValue, storeInputToIso } from "@/lib/store-time";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -46,6 +46,7 @@ export function AdminSales() {
   const [sales, setSales] = useState<SaleRow[]>([]);
   const [corrections, setCorrections] = useState<SaleCorrection[]>([]);
   const [cart, setCart] = useState<SaleCartItem[]>([]);
+  const [productSearch, setProductSearch] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState("");
@@ -85,6 +86,7 @@ export function AdminSales() {
   }, [load, refreshKey]);
 
   const selectedProduct = products.find((product) => product.id === selectedProductId);
+  const filteredProducts = useMemo(() => filterProductsByName(products, productSearch), [products, productSearch]);
   const orders = useMemo(() => groupSaleRows(sales), [sales]);
   const correctionsByOrder = useMemo(() => {
     const grouped = new Map<string, SaleCorrection[]>();
@@ -111,6 +113,7 @@ export function AdminSales() {
   function changeMode(nextMode: Mode) {
     setMode(nextMode);
     setCart([]);
+    setProductSearch("");
     setSelectedProductId("");
     setUnitPrice("");
     setDiscountedTotal("");
@@ -140,7 +143,7 @@ export function AdminSales() {
     try {
       setCart((items) => upsertSaleCartItem(items, item));
       setFeedback(null);
-      setSelectedProductId(""); setUnitPrice(""); setQuantity(1);
+      setProductSearch(""); setSelectedProductId(""); setUnitPrice(""); setQuantity(1);
     } catch (error) {
       setFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível adicionar o produto." });
     }
@@ -172,7 +175,7 @@ export function AdminSales() {
     if (error) setFeedback({ type: "error", message: await functionErrorMessage(error, "Não foi possível registrar a venda.") });
     else {
       setFeedback({ type: "success", message: `${mode === "single" ? "Venda" : "Venda em grupo"} registrada. O estoque foi atualizado automaticamente.` });
-      setCart([]); setSelectedProductId(""); setUnitPrice(""); setDiscountedTotal(""); setQuantity(1); setSoldAt(storeDateTimeInputValue());
+      setCart([]); setProductSearch(""); setSelectedProductId(""); setUnitPrice(""); setDiscountedTotal(""); setQuantity(1); setSoldAt(storeDateTimeInputValue());
       setLoading(true);
       setRefreshKey((value) => value + 1);
       formElement.reset();
@@ -229,7 +232,24 @@ export function AdminSales() {
       <section className="rounded-[2rem] border border-brand-border bg-white p-5 shadow-soft sm:p-7">
         <p className="text-xs font-extrabold tracking-[0.16em] text-brand">{mode === "single" ? "PRODUTO VENDIDO" : "MONTAR VENDA"}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2"><FormField label="Produto" htmlFor="sale-product"><select id="sale-product" value={selectedProductId} onChange={(event) => selectProduct(event.target.value)} className="form-control"><option value="">Selecione um produto</option>{products.map((product) => <option key={product.id} value={product.id} disabled={product.stock < 1}>{product.name} — {product.stock} disponível(is)</option>)}</select></FormField></div>
+          <div className="sm:col-span-2">
+            <FormField label="Pesquisar produto" htmlFor="sale-product-search">
+              <div className="relative">
+                <SearchIcon className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-brand" />
+                <input
+                  id="sale-product-search"
+                  type="search"
+                  value={productSearch}
+                  onChange={(event) => { setProductSearch(event.target.value); setSelectedProductId(""); setUnitPrice(""); }}
+                  className="form-control pl-11"
+                  placeholder="Digite o nome do produto"
+                  autoComplete="off"
+                />
+              </div>
+              <span className="mt-2 block text-xs text-muted">{filteredProducts.length} produto(s) encontrado(s). A busca não gera novas requisições.</span>
+            </FormField>
+          </div>
+          <div className="sm:col-span-2"><FormField label="Produto" htmlFor="sale-product"><select id="sale-product" value={selectedProductId} onChange={(event) => selectProduct(event.target.value)} className="form-control"><option value="">{filteredProducts.length ? "Selecione um produto" : "Nenhum produto encontrado"}</option>{filteredProducts.map((product) => <option key={product.id} value={product.id} disabled={product.stock < 1}>{product.name} — {product.stock} disponível(is)</option>)}</select></FormField></div>
           <FormField label="Quantidade" htmlFor="sale-quantity"><input id="sale-quantity" type="number" min={1} max={selectedProduct?.stock || undefined} value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className="form-control" /></FormField>
           <FormField label="Valor unitário" htmlFor="sale-price"><input id="sale-price" inputMode="decimal" value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} placeholder="0,00" className="form-control" /></FormField>
         </div>
@@ -269,6 +289,10 @@ export function AdminSales() {
 
 function ModeButton({ active, onClick, title, detail }: { active: boolean; onClick: () => void; title: string; detail: string }) {
   return <button type="button" role="tab" aria-selected={active} onClick={onClick} className={`min-h-16 rounded-xl px-3 text-center ${active ? "bg-brand text-white" : "text-brand"}`}><strong className="block text-sm">{title}</strong><span className={`mt-1 block text-[0.65rem] ${active ? "text-white/75" : "text-muted"}`}>{detail}</span></button>;
+}
+
+function SearchIcon({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" /><path d="m16 16 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

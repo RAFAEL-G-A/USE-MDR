@@ -22,3 +22,14 @@ test("carrega e salva a preferência pelo Supabase", () => {
 test("mantém o prefetch do carrossel desativado", () => {
   assert.match(carousel, /prefetch=\{false\}/);
 });
+
+test("mantém o botão e o indicador fora da composição dos slides", () => {
+  const textEnd = carousel.indexOf("</article>");
+  const carouselEnd = carousel.indexOf("</div>", textEnd);
+  const indicator = carousel.indexOf('aria-label="Escolher destaque"');
+  const callToAction = carousel.indexOf("EXPLORAR NOVIDADES");
+  assert.ok(textEnd >= 0 && callToAction > textEnd);
+  assert.ok(carouselEnd >= 0 && indicator > carouselEnd);
+  assert.ok(callToAction > indicator);
+  assert.doesNotMatch(carousel, /absolute inset-x-0 bottom-4/);
+});

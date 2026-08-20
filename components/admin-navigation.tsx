@@ -4,32 +4,46 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const items = [
-  { href: "/admin/estoque", label: "Gerenciar estoque", mobileLabel: "Estoque", description: "Produtos, imagens e quantidades", icon: InventoryIcon },
-  { href: "/admin/vendas", label: "Vendas", mobileLabel: "Vendas", description: "Venda única ou com vários itens", icon: SalesIcon },
-  { href: "/admin/destaques", label: "Destaques", mobileLabel: "Destaques", description: "Carrossel da página inicial", icon: HighlightsIcon },
-  { href: "/admin/financas", label: "Finanças", mobileLabel: "Finanças", description: "Resultados, despesas e relatórios", icon: EarningsIcon },
+  { href: "/admin/estoque", label: "Gerenciar estoque", description: "Produtos, imagens e quantidades", icon: InventoryIcon },
+  { href: "/admin/vendas", label: "Vendas", description: "Venda única ou com vários itens", icon: SalesIcon },
+  { href: "/admin/destaques", label: "Destaques", description: "Carrossel e categorias", icon: HighlightsIcon },
+  { href: "/admin/financas", label: "Finanças", description: "Resultados, despesas e relatórios", icon: EarningsIcon },
+  { href: "/admin/metricas", label: "Métricas", description: "Visitas e pedidos pelo WhatsApp", icon: MetricsIcon },
 ];
 
-export function AdminNavigation() {
+export function AdminNavigation({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+
   return (
-    <nav className="mx-auto max-w-5xl px-3 py-3 md:px-8" aria-label="Áreas administrativas">
-      <p className="mb-2 px-2 text-[0.6rem] font-extrabold uppercase tracking-[0.16em] text-muted md:hidden">Acessos do painel</p>
-      <div className="grid grid-cols-4 gap-1.5 md:gap-3">
-      {items.map((item) => {
-        const active = pathname === item.href;
-        const Icon = item.icon;
-        return (
-          <Link key={item.href} href={item.href} prefetch={false} aria-current={active ? "page" : undefined} className={`flex min-h-16 items-center justify-center gap-2 rounded-2xl border px-2 py-2.5 text-center transition-colors md:px-5 ${active ? "border-brand bg-brand text-white shadow-lg shadow-brand/15" : "border-brand-border bg-white text-brand hover:bg-brand-soft"}`}>
-            <Icon className="size-5 shrink-0 md:size-6" />
-            <span>
-            <span className="block text-[0.65rem] font-extrabold sm:hidden">{item.mobileLabel}</span>
-            <span className="hidden text-sm font-extrabold sm:block">{item.label}</span>
-            <span className={`mt-1 hidden text-[0.65rem] md:block ${active ? "text-white/75" : "text-muted"}`}>{item.description}</span>
-            </span>
-          </Link>
-        );
-      })}
+    <nav className="flex h-full flex-col px-3 pb-4" aria-label="Áreas administrativas">
+      <p className={`px-3 pb-3 pt-1 text-[0.62rem] font-extrabold uppercase tracking-[0.16em] text-muted ${collapsed ? "sr-only" : ""}`}>
+        Acessos do painel
+      </p>
+      <div className="space-y-2">
+        {items.map((item) => {
+          const active = pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              prefetch={false}
+              onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
+              aria-label={collapsed ? item.label : undefined}
+              title={collapsed ? item.label : undefined}
+              className={`group flex min-h-14 items-center rounded-2xl border transition-colors ${collapsed ? "justify-center px-3" : "gap-3 px-4 py-3"} ${active ? "border-brand bg-brand text-white shadow-lg shadow-brand/15" : "border-transparent text-foreground hover:border-brand-border hover:bg-white"}`}
+            >
+              <Icon className="size-5 shrink-0" />
+              {!collapsed && (
+                <span className="min-w-0">
+                  <span className="block text-sm font-extrabold">{item.label}</span>
+                  <span className={`mt-0.5 block truncate text-[0.65rem] ${active ? "text-white/75" : "text-muted"}`}>{item.description}</span>
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
@@ -49,4 +63,8 @@ function SalesIcon({ className }: { className?: string }) {
 
 function EarningsIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+function MetricsIcon({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /><path d="M3 19h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>;
 }

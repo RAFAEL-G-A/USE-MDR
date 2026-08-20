@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { groupSaleRows, saleCartTotal, upsertSaleCartItem, validateDiscountedTotal, type SaleRow } from "../lib/admin-sales.ts";
+import { filterProductsByName, groupSaleRows, saleCartTotal, upsertSaleCartItem, validateDiscountedTotal, type SaleRow } from "../lib/admin-sales.ts";
 import { applyFinalSaleTotal } from "../supabase/functions/_shared/sale-discount.ts";
 
 test("soma e agrupa produtos repetidos no carrinho", () => {
@@ -42,4 +42,15 @@ test("distribui o desconto em venda agrupada sem perder centavos", () => {
   assert.equal(Math.round(registeredTotal * 100), 7237);
   assert.equal(result.originalTotal, 84.7);
   assert.equal(result.finalTotal, 72.37);
+});
+
+test("pesquisa produtos por nome sem diferenciar acentos ou maiúsculas", () => {
+  const products = [
+    { id: "p1", name: "Cola de Cílios" },
+    { id: "p2", name: "Máscara Ruby" },
+    { id: "p3", name: "Gloss Crystal" },
+  ];
+  assert.deepEqual(filterProductsByName(products, "cilios cola").map((item) => item.id), ["p1"]);
+  assert.deepEqual(filterProductsByName(products, "MASCARA").map((item) => item.id), ["p2"]);
+  assert.equal(filterProductsByName(products, "produto inexistente").length, 0);
 });

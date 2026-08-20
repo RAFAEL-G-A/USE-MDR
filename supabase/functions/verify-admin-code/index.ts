@@ -7,7 +7,7 @@ import {
 } from "../_shared/admin-auth.ts";
 
 const MAX_ATTEMPTS = 5;
-const AUTHORIZATION_MINUTES = 120;
+const AUTHORIZATION_HOURS = 5;
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -55,7 +55,9 @@ Deno.serve(async (request) => {
       );
     }
 
-    const verifiedUntil = new Date(Date.now() + AUTHORIZATION_MINUTES * 60 * 1000).toISOString();
+    const verifiedUntil = new Date(
+      Date.now() + AUTHORIZATION_HOURS * 60 * 60 * 1000,
+    ).toISOString();
     const { error: sessionError } = await adminClient.from("admin_verified_sessions").upsert({
       user_id: user.id,
       session_id: sessionId,

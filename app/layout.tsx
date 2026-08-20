@@ -3,6 +3,7 @@ import { Bodoni_Moda, Manrope } from "next/font/google";
 import { CartProvider } from "@/components/cart-provider";
 import { FavoritesProvider } from "@/components/favorites-provider";
 import { SiteFooter } from "@/components/site-footer";
+import { StoreAnalyticsTracker } from "@/components/store-analytics-tracker";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${manrope.variable} ${bodoniModa.variable}`}>
       <body>
+        <StoreAnalyticsTracker />
         <CartProvider>
           <FavoritesProvider>
             <div className="flex min-h-screen flex-col">

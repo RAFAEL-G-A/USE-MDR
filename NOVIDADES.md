@@ -78,7 +78,7 @@ celular.
 - Limite de entrada definido em 5 MB, mantendo a conversão e compressão
   automática para WebP antes do envio.
 - Acesso administrativo simultâneo em mais de um celular ou computador, com
-  código e autorização independentes por dispositivo durante duas horas.
+  código e autorização independentes por dispositivo.
 - O botão Sair encerra apenas a sessão do aparelho atual e preserva os demais
   acessos administrativos autorizados.
 - Manual visual da área administrativa criado sem credenciais ou dados de
@@ -120,3 +120,48 @@ celular.
 
 Este arquivo continuará recebendo novas versões à medida que outras ideias forem
 incorporadas ao catálogo.
+
+## 19 de agosto de 2026 — carrossel e categorias reorganizados
+
+- O botão **Explorar novidades** foi movido para baixo do carrossel para não disputar espaço com os textos das campanhas.
+- O indicador dos slides agora fica fora da imagem, acima do botão **Explorar novidades**.
+- A categoria **Pele** foi simplificada para Bases, Corretivos, Pós, Primers e Brumas.
+- Blush, Iluminador, Contorno, Sombra e Multifuncionais agora pertencem à categoria **Paletas**.
+- As subcategorias **Cílios** e **Cola de Cílios** foram adicionadas em Olhos.
+- Uma migração preserva os produtos existentes e atualiza somente sua classificação no catálogo.
+
+## 19 de agosto de 2026 — métricas da jornada até o WhatsApp
+
+- Nova aba administrativa **Métricas**, protegida pela autenticação em duas etapas.
+- Contagem anônima de visitantes, sessões e carrinhos levados ao WhatsApp.
+- Taxa de conversão e gráfico diário com filtros para hoje, 7 dias e 30 dias.
+- Registro limitado a uma visita e uma ida ao WhatsApp por sessão, reduzindo requisições e duplicidades.
+- Nenhum nome, telefone, e-mail, IP, produto individual ou mensagem do pedido é armazenado.
+- Os relatórios financeiros enviados por e-mail também passam a apresentar o resumo da jornada até o WhatsApp.
+
+## 19 de agosto de 2026 — jornada administrativa ampliada
+
+- A autorização da segunda verificação administrativa passa de duas para cinco horas por dispositivo.
+- A sessão principal do Supabase continua sendo renovada normalmente, sem reduzir as validações realizadas no servidor.
+- Cada aparelho permanece com sua própria autorização, e o botão **Sair** continua encerrando somente o acesso daquele dispositivo.
+
+## 20 de agosto de 2026 — painel mais organizado e vendas mais rápidas
+
+- Navegação administrativa transformada em um menu lateral recolhível no
+  computador e em uma gaveta compacta no celular.
+- Ícones e textos dos acessos deixaram de disputar espaço, preservando a
+  leitura de Estoque, Vendas, Destaques, Finanças e Métricas.
+- Pesquisa de produtos adicionada às vendas únicas e às vendas em grupo, sem
+  diferenciar acentos ou letras maiúsculas.
+- Correção da comunicação entre o formulário administrativo e as novas
+  subcategorias **Cílios** e **Cola de Cílios**.
+- Cartões de Recebimentos e Mais vendidos ajustados para manter altura,
+  alinhamento e espaçamento consistentes.
+- Gráfico de fluxo diário e resumo de carrinhos enviados reorganizados para
+  dividir melhor a tela em monitores largos e permanecer legíveis no celular.
+- Página de Métricas integrada ao menu lateral e aos relatórios financeiros
+  enviados por e-mail.
+- Testes ampliados para taxonomia, pesquisa de produtos, responsividade do
+  painel, segurança das APIs, duração da sessão e jornada até o WhatsApp.
+- Prévia local habilitada na rede da loja para testes reais em celulares antes
+  da publicação.

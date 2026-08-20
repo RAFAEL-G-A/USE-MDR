@@ -43,6 +43,23 @@ export type SaleCorrection = {
   corrected_at: string;
 };
 
+export function normalizeProductSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+}
+
+export function filterProductsByName<T extends { name: string }>(products: T[], query: string) {
+  const terms = normalizeProductSearch(query).split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return products;
+  return products.filter((product) => {
+    const normalizedName = normalizeProductSearch(product.name);
+    return terms.every((term) => normalizedName.includes(term));
+  });
+}
+
 export function upsertSaleCartItem(items: SaleCartItem[], next: SaleCartItem) {
   const current = items.find((item) => item.product_id === next.product_id);
   if (!current) return [...items, next];
