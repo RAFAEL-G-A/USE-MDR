@@ -22,6 +22,17 @@ test("oferece Cílios e Cola de Cílios em Olhos", () => {
   assert.ok(!(webTaxonomy.Olhos as readonly string[]).includes("Cola"));
 });
 
+test("oferece Pigmentos e Glitter em Olhos", () => {
+  assert.ok(webTaxonomy.Olhos.includes("Pigmentos"));
+  assert.ok(webTaxonomy.Olhos.includes("Glitter"));
+});
+
+test("oferece as novas subcategorias de Acessórios", () => {
+  for (const subcategory of ["Bolsa", "Chapinhas", "Xuxinha", "Strass", "Navalhas", "Escovas"] as const) {
+    assert.ok(webTaxonomy.Acessórios.includes(subcategory));
+  }
+});
+
 test("mantém as categorias do site e da API sincronizadas", () => {
   assert.deepEqual(apiTaxonomy, webTaxonomy);
 });

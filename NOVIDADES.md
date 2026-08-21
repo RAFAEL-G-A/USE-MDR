@@ -165,3 +165,12 @@ incorporadas ao catálogo.
   painel, segurança das APIs, duração da sessão e jornada até o WhatsApp.
 - Prévia local habilitada na rede da loja para testes reais em celulares antes
   da publicação.
+
+## 21 de agosto de 2026 — novas subcategorias do catálogo
+
+- A categoria **Acessórios** passa a oferecer Bolsa, Chapinhas, Xuxinha,
+  Strass, Navalhas e Escovas.
+- A categoria **Olhos** passa a oferecer Pigmentos e Glitter.
+- As novas opções ficam disponíveis tanto no cadastro quanto na edição de
+  produtos, mantendo a validação do site e do Supabase sincronizada.
+- Nenhum produto existente, imagem, preço ou quantidade de estoque é alterado.

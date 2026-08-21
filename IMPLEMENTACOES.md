@@ -173,6 +173,22 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 - Catálogo confirmado com os registros e quantidades existentes antes do
   deploy.
 
+## 21 de agosto de 2026 — expansão das subcategorias
+
+### Implementações
+
+- Inclusão de Bolsa, Chapinhas, Xuxinha, Strass, Navalhas e Escovas em
+  Acessórios.
+- Inclusão de Pigmentos e Glitter em Olhos.
+- Sincronização das novas opções entre catálogo, formulários administrativos e
+  validações das funções do Supabase.
+
+### Garantias
+
+- Alteração restrita às listas permitidas de classificação.
+- Nenhuma migração ou atualização dos produtos existentes.
+- Testes de taxonomia ampliados para impedir divergências entre site e API.
+
 ## Princípios mantidos em todas as etapas
 
 - Alterações de interface não devem recriar nem apagar produtos.
