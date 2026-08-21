@@ -4,7 +4,7 @@ import {
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
-import { catalogTaxonomy } from "../_shared/catalog-taxonomy.ts";
+import { isValidCatalogSelection } from "../_shared/catalog-validation.ts";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_GALLERY_IMAGES = 3;
@@ -62,7 +62,7 @@ Deno.serve(async (request) => {
     if (!Number.isInteger(stock) || stock < 0) {
       return json(request, { error: "Informe um estoque inteiro igual ou maior que zero." }, 400);
     }
-    if (!catalogTaxonomy[category]?.includes(subcategory)) {
+    if (!(await isValidCatalogSelection(context.adminClient, category, subcategory))) {
       return json(request, { error: "A categoria ou subcategoria não é válida." }, 400);
     }
     if (description.length > 1000) {

@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/admin/estoque", label: "Gerenciar estoque", description: "Produtos, imagens e quantidades", icon: InventoryIcon },
+  { href: "/admin/categorias", label: "Categorias", description: "Categorias, subcategorias e imagens", icon: CategoriesIcon },
   { href: "/admin/vendas", label: "Vendas", description: "Venda única ou com vários itens", icon: SalesIcon },
-  { href: "/admin/destaques", label: "Destaques", description: "Carrossel e categorias", icon: HighlightsIcon },
+  { href: "/admin/destaques", label: "Destaques", description: "Carrossel da página inicial", icon: HighlightsIcon },
   { href: "/admin/financas", label: "Finanças", description: "Resultados, despesas e relatórios", icon: EarningsIcon },
   { href: "/admin/metricas", label: "Métricas", description: "Visitas e pedidos pelo WhatsApp", icon: MetricsIcon },
 ];
@@ -55,6 +56,10 @@ function InventoryIcon({ className }: { className?: string }) {
 
 function HighlightsIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="m18.5 14 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg>;
+}
+
+function CategoriesIcon({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5.5h6v6H4zM14 5.5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg>;
 }
 
 function SalesIcon({ className }: { className?: string }) {

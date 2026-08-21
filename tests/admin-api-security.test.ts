@@ -8,6 +8,7 @@ const protectedFunctions = [
   "create-product",
   "manage-analytics",
   "manage-category-image",
+  "manage-catalog-categories",
   "manage-finances",
   "manage-hero-slide",
   "manage-product",

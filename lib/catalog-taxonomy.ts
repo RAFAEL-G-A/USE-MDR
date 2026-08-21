@@ -7,6 +7,8 @@ export const catalogTaxonomy = {
     "Sobrancelhas",
     "Cílios",
     "Cola de Cílios",
+    "Pigmentos",
+    "Glitter",
   ],
   "Pele": ["Bases", "Corretivos", "Pós", "Primers", "Brumas"],
   "Skincare": [
@@ -30,6 +32,12 @@ export const catalogTaxonomy = {
     "Organizadores",
     "Aplicadores",
     "Óculos",
+    "Bolsa",
+    "Chapinhas",
+    "Xuxinha",
+    "Strass",
+    "Navalhas",
+    "Escovas",
   ],
 } as const;
 

@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import { catalogCategories, catalogTaxonomy, type CatalogCategory } from "@/lib/catalog-taxonomy";
 import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useCatalogTaxonomy } from "@/lib/use-catalog-taxonomy";
 
 type Feedback = { type: "success" | "error"; message: string } | null;
 
@@ -23,10 +23,11 @@ async function functionErrorMessage(error: unknown, fallback: string) {
 
 export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const { categories: catalogCategories, taxonomy: catalogTaxonomy } = useCatalogTaxonomy();
   const formRef = useRef<HTMLFormElement>(null);
   const [saving, setSaving] = useState(false);
   const [processingImages, setProcessingImages] = useState(false);
-  const [category, setCategory] = useState<CatalogCategory>("Lábios");
+  const [category, setCategory] = useState("Lábios");
   const [primaryImage, setPrimaryImage] = useState<CompressedProductImage | null>(null);
   const [galleryImages, setGalleryImages] = useState<CompressedProductImage[]>([]);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -132,8 +133,8 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
           </div>
           <p className="-mt-3 text-xs text-muted">O custo é confidencial e aparece somente no painel administrativo.</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Categoria" htmlFor="product-category"><select id="product-category" name="category" value={category} onChange={(event) => setCategory(event.target.value as CatalogCategory)} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField>
-            <FormField label="Subcategoria" htmlFor="product-subcategory"><select id="product-subcategory" name="subcategory" className="form-control">{catalogTaxonomy[category].map((item) => <option key={item}>{item}</option>)}</select></FormField>
+            <FormField label="Categoria" htmlFor="product-category"><select id="product-category" name="category" value={category} onChange={(event) => setCategory(event.target.value)} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField>
+            <FormField label="Subcategoria" htmlFor="product-subcategory"><select key={category} id="product-subcategory" name="subcategory" className="form-control">{(catalogTaxonomy[category] ?? []).map((item) => <option key={item}>{item}</option>)}</select></FormField>
           </div>
           <FormField label="Descrição" htmlFor="product-description"><textarea id="product-description" name="description" rows={5} maxLength={1000} className="form-control resize-y" placeholder="Benefícios, acabamento, conteúdo e diferenciais." /></FormField>
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-[1.25rem] border border-brand-border bg-brand-soft/45 px-4 py-4"><span><span className="block text-sm font-extrabold">Exibir em Lançamentos</span><span className="mt-1 block text-xs text-muted">Mostra o produto na página inicial.</span></span><input name="is_launch" type="checkbox" defaultChecked className="size-5 accent-brand" /></label>

@@ -165,3 +165,34 @@ incorporadas ao catálogo.
   painel, segurança das APIs, duração da sessão e jornada até o WhatsApp.
 - Prévia local habilitada na rede da loja para testes reais em celulares antes
   da publicação.
+
+## 21 de agosto de 2026 — novas subcategorias do catálogo
+
+- A categoria **Acessórios** passa a oferecer Bolsa, Chapinhas, Xuxinha,
+  Strass, Navalhas e Escovas.
+- A categoria **Olhos** passa a oferecer Pigmentos e Glitter.
+- As novas opções ficam disponíveis tanto no cadastro quanto na edição de
+  produtos, mantendo a validação do site e do Supabase sincronizada.
+- Nenhum produto existente, imagem, preço ou quantidade de estoque é alterado.
+
+## 21 de agosto de 2026 — categorias administráveis
+
+- Nova área **Categorias** no painel para criar categorias com imagem e primeira
+  subcategoria.
+- Inclusão de novas subcategorias sem precisar alterar o código do site.
+- Troca de imagens com otimização automática em WebP e remoção do arquivo
+  anterior do Storage.
+- Proteção que impede remover uma subcategoria enquanto houver produtos
+  vinculados a ela.
+- Formulário de novo produto movido para o início do Gerenciar estoque; a lista
+  de edição permanece logo abaixo.
+- Catálogo, cadastro e edição passam a consultar a mesma configuração de
+  categorias, com uma lista segura de reserva caso a conexão fique indisponível.
+- Pesquisa rápida por categoria ou subcategoria dentro do painel.
+- Contadores mostram quantos produtos existem em cada divisão do catálogo.
+- Categorias podem ser ocultadas, reativadas e reposicionadas sem apagar seus
+  produtos.
+- Categorias e subcategorias podem ser renomeadas com atualização conjunta dos
+  produtos vinculados.
+- Botão de pré-visualização abre a categoria diretamente no catálogo.
+- Histórico protegido registra as alterações recentes com data e horário.
