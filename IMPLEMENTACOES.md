@@ -189,6 +189,45 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 - Nenhuma migração ou atualização dos produtos existentes.
 - Testes de taxonomia ampliados para impedir divergências entre site e API.
 
+## 21 de agosto de 2026 — gerenciamento dinâmico de categorias
+
+### Implementações
+
+- Nova área administrativa para criar categorias com nome, descrição, imagem e
+  primeira subcategoria.
+- Inclusão e remoção controlada de subcategorias nas categorias existentes.
+- Imagens de categorias comprimidas e convertidas para WebP antes do envio.
+- Arquivo anterior removido do Storage somente depois que a nova imagem é salva.
+- Fonte única de categorias compartilhada pelo catálogo, cadastro e edição de
+  produtos.
+- Cadastro de novos produtos reposicionado acima da listagem de edição no
+  Gerenciar estoque.
+- Pesquisa por categoria e subcategoria no painel.
+- Contagem de produtos por categoria e por subcategoria.
+- Pré-visualização direta da categoria no catálogo público.
+- Controles para ocultar, reativar e reorganizar categorias e subcategorias.
+- Renomeações transacionais que atualizam configuração e produtos vinculados em
+  uma única operação.
+- Histórico administrativo das últimas alterações de classificação.
+
+### Segurança e integridade
+
+- Leitura pública limitada às categorias ativas; gravações permanecem
+  exclusivas da API administrativa com segunda verificação.
+- Exclusão de subcategoria bloqueada quando existem produtos vinculados.
+- Chaves estrangeiras, índices e restrição de exclusão preservam a consistência
+  da configuração.
+- Migration apenas copia a configuração existente e não atualiza, recria nem
+  remove produtos do catálogo.
+
+### Verificações locais
+
+- 73 testes automatizados aprovados.
+- Lint, TypeScript e build Next.js aprovados.
+- Home, catálogo, estoque e nova área de categorias responderam normalmente na
+  prévia local.
+- Nenhum deploy desta etapa realizado antes do relatório e da autorização.
+
 ## Princípios mantidos em todas as etapas
 
 - Alterações de interface não devem recriar nem apagar produtos.

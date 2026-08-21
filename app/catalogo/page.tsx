@@ -7,14 +7,11 @@ import { CatalogScrollTarget } from "@/components/catalog-scroll-target";
 import { ArrowLeftIcon, SearchIcon } from "@/components/icons";
 import { MobileNavigation } from "@/components/mobile-navigation";
 import type { ProductCardItem } from "@/components/product-card";
-import { catalogTaxonomy } from "@/lib/catalog-taxonomy";
-import { getCategoryVisuals } from "@/lib/category-images";
+import { getCatalogConfiguration } from "@/lib/catalog-configuration";
 import { demoProducts } from "@/lib/demo-products";
 import { getLatestProducts } from "@/lib/products";
 
 export const metadata: Metadata = { title: "Catálogo | USE MDR Beauty", description: "Explore as categorias e encontre seus produtos favoritos na USE MDR Beauty." };
-
-const subcategories: Record<string, readonly string[]> = catalogTaxonomy;
 
 function firstValue(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
 function normalized(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim(); }
@@ -26,10 +23,11 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
   const selectedCategory = firstValue(params.categoria);
   const selectedSubcategory = firstValue(params.subcategoria);
   const initialPage = positiveInteger(params.pagina);
-  const [supabaseProducts, categories] = await Promise.all([
+  const [supabaseProducts, catalogConfiguration] = await Promise.all([
     getLatestProducts(500),
-    getCategoryVisuals(),
+    getCatalogConfiguration(),
   ]);
+  const { categories, taxonomy: subcategories } = catalogConfiguration;
   const allProducts: ProductCardItem[] = supabaseProducts.length
     ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, subcategory: product.subcategory, price: product.price, image: product.imageUrl }))
     : demoProducts;
@@ -61,7 +59,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
 
         <section className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4" aria-label="Categorias de produtos">
           {categories.map((category, index) => (
-            <Link key={category.key} href={{ pathname: "/catalogo", query: { categoria: category.filterCategory, ...(category.filterSubcategory ? { subcategoria: category.filterSubcategory } : {}) }, hash: "produtos" }} prefetch={false} className={`group relative min-h-56 overflow-hidden rounded-[1.75rem] border border-brand-border shadow-sm sm:min-h-72 ${index === 6 ? "col-span-2 lg:col-span-1" : ""}`}>
+            <Link key={category.key} href={{ pathname: "/catalogo", query: { categoria: category.filterCategory }, hash: "produtos" }} prefetch={false} className={`group relative min-h-56 overflow-hidden rounded-[1.75rem] border border-brand-border shadow-sm sm:min-h-72 ${index === categories.length - 1 && categories.length % 2 === 1 ? "col-span-2 lg:col-span-1" : ""}`}>
               <Image src={category.image} alt="" fill loading={index < 2 ? "eager" : "lazy"} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
               <span className="absolute inset-0 bg-gradient-to-t from-[#35151f]/80 via-[#54222c]/15 to-transparent" aria-hidden="true" />
               <span className="absolute inset-x-0 bottom-0 z-10 p-5 text-white sm:p-6"><strong className="block text-xl font-extrabold sm:text-2xl">{category.name}</strong><span className="mt-1 block text-xs text-white/90 sm:text-sm">{category.description}</span><span className="mt-4 flex items-center gap-2 text-xs font-bold">Explorar <span className="flex size-8 items-center justify-center rounded-full bg-white/20 text-lg backdrop-blur">→</span></span></span>

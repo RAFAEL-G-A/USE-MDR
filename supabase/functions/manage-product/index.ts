@@ -4,7 +4,7 @@ import {
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
-import { catalogTaxonomy } from "../_shared/catalog-taxonomy.ts";
+import { isValidCatalogSelection } from "../_shared/catalog-validation.ts";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_GALLERY_IMAGES = 3;
@@ -175,7 +175,7 @@ Deno.serve(async (request) => {
     if (!Number.isFinite(price) || price <= 0) return json(request, { error: "Informe um preço válido." }, 400);
     if (!Number.isFinite(costPrice) || costPrice < 0) return json(request, { error: "Informe um preço de custo válido." }, 400);
     if (!Number.isInteger(stock) || stock < 0) return json(request, { error: "Informe um estoque válido." }, 400);
-    if (!catalogTaxonomy[category]?.includes(subcategory)) return json(request, { error: "Categoria ou subcategoria inválida." }, 400);
+    if (!(await isValidCatalogSelection(context.adminClient, category, subcategory))) return json(request, { error: "Categoria ou subcategoria inválida." }, 400);
     if (description.length > 1000) return json(request, { error: "A descrição deve ter até 1000 caracteres." }, 400);
     if (galleryImages.length + retainedGallery.length > MAX_GALLERY_IMAGES) {
       return json(request, { error: `O produto pode ter no máximo ${MAX_GALLERY_IMAGES} imagens complementares.` }, 400);

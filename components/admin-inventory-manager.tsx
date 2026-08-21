@@ -4,9 +4,9 @@ import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { AdminProductForm, FeedbackMessage, FormField } from "@/components/admin-product-form";
-import { catalogCategories, catalogTaxonomy, type CatalogCategory } from "@/lib/catalog-taxonomy";
 import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useCatalogTaxonomy } from "@/lib/use-catalog-taxonomy";
 
 type GalleryImage = { id: string; imageUrl: string; storagePath: string; sortOrder: number };
 
@@ -91,6 +91,8 @@ export function AdminInventoryManager() {
         <SummaryCard label="Sem estoque" value={outOfStock} />
       </div>
 
+      <AdminProductForm onCreated={refresh} />
+
       <section className="rounded-[2rem] border border-brand-border bg-white p-5 shadow-soft sm:p-8">
         <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-extrabold tracking-[0.18em] text-brand">INVENTÁRIO ATUAL</p><h2 className="mt-2 font-serif text-3xl sm:text-4xl">Editar produtos</h2></div><button type="button" onClick={refresh} className="px-2 py-2 text-xs font-bold text-brand">Atualizar lista</button></div>
         {loading ? <p className="mt-6 text-sm text-muted">Carregando estoque...</p> : products.length === 0 ? <p className="mt-6 text-sm text-muted">Nenhum produto cadastrado.</p> : (
@@ -108,21 +110,16 @@ export function AdminInventoryManager() {
           </div>
         )}
       </section>
-
-      <AdminProductForm onCreated={refresh} />
     </div>
   );
 }
 
 function ProductEditor({ product, onChanged }: { product: Product; onChanged: () => void }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const initialCategory = catalogCategories.includes(product.category as CatalogCategory) ? product.category as CatalogCategory : "Lábios";
-  const [category, setCategory] = useState<CatalogCategory>(initialCategory);
-  const [subcategory, setSubcategory] = useState(() =>
-    (catalogTaxonomy[initialCategory] as readonly string[]).includes(product.subcategory)
-      ? product.subcategory
-      : catalogTaxonomy[initialCategory][0],
-  );
+  const { categories: catalogCategories, taxonomy: catalogTaxonomy } = useCatalogTaxonomy();
+  const initialCategory = product.category || catalogCategories[0] || "Lábios";
+  const [category, setCategory] = useState(initialCategory);
+  const [subcategory, setSubcategory] = useState(product.subcategory);
   const [primaryImage, setPrimaryImage] = useState<CompressedProductImage | null>(null);
   const [newGalleryImages, setNewGalleryImages] = useState<CompressedProductImage[]>([]);
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
@@ -216,7 +213,7 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
       <div className="space-y-4">
         <FormField label="Nome" htmlFor={`edit-name-${product.id}`}><input id={`edit-name-${product.id}`} name="name" required defaultValue={product.name} maxLength={120} className="form-control" /></FormField>
         <div className="grid grid-cols-3 gap-3"><FormField label="Venda" htmlFor={`edit-price-${product.id}`}><input id={`edit-price-${product.id}`} name="price" required inputMode="decimal" defaultValue={product.price.toFixed(2).replace(".", ",")} className="form-control" /></FormField><FormField label="Custo" htmlFor={`edit-cost-${product.id}`}><input id={`edit-cost-${product.id}`} name="cost_price" required inputMode="decimal" defaultValue={product.costPrice.toFixed(2).replace(".", ",")} className="form-control" /></FormField><FormField label="Estoque" htmlFor={`edit-stock-${product.id}`}><input id={`edit-stock-${product.id}`} name="stock" type="number" required min={0} step={1} defaultValue={product.stock} className="form-control" /></FormField></div>
-        <div className="grid grid-cols-2 gap-3"><FormField label="Categoria" htmlFor={`edit-category-${product.id}`}><select id={`edit-category-${product.id}`} value={category} onChange={(event) => { const nextCategory = event.target.value as CatalogCategory; setCategory(nextCategory); setSubcategory(catalogTaxonomy[nextCategory][0]); }} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField><FormField label="Subcategoria" htmlFor={`edit-subcategory-${product.id}`}><select id={`edit-subcategory-${product.id}`} name="subcategory" value={subcategory} onChange={(event) => setSubcategory(event.target.value)} className="form-control">{catalogTaxonomy[category].map((item) => <option key={item}>{item}</option>)}</select></FormField></div>
+        <div className="grid grid-cols-2 gap-3"><FormField label="Categoria" htmlFor={`edit-category-${product.id}`}><select id={`edit-category-${product.id}`} value={category} onChange={(event) => { const nextCategory = event.target.value; setCategory(nextCategory); setSubcategory(catalogTaxonomy[nextCategory]?.[0] ?? ""); }} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField><FormField label="Subcategoria" htmlFor={`edit-subcategory-${product.id}`}><select id={`edit-subcategory-${product.id}`} name="subcategory" value={subcategory} onChange={(event) => setSubcategory(event.target.value)} className="form-control">{(catalogTaxonomy[category] ?? []).map((item) => <option key={item}>{item}</option>)}</select></FormField></div>
         <FormField label="Descrição" htmlFor={`edit-description-${product.id}`}><textarea id={`edit-description-${product.id}`} name="description" rows={4} maxLength={1000} defaultValue={product.description} className="form-control resize-y" /></FormField>
         <label className="flex items-center gap-3 text-sm font-bold"><input name="is_launch" type="checkbox" defaultChecked={product.isLaunch} className="size-5 accent-brand" /> Exibir em Lançamentos</label>
       </div>

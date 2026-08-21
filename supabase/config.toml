@@ -22,6 +22,9 @@ verify_jwt = false
 [functions.manage-category-image]
 verify_jwt = false
 
+[functions.manage-catalog-categories]
+verify_jwt = false
+
 [functions.manage-finances]
 verify_jwt = false
 
