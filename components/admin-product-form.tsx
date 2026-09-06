@@ -27,6 +27,7 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [saving, setSaving] = useState(false);
   const [processingImages, setProcessingImages] = useState(false);
+  const [recentlySaved, setRecentlySaved] = useState(false);
   const [category, setCategory] = useState("Lábios");
   const [primaryImage, setPrimaryImage] = useState<CompressedProductImage | null>(null);
   const [galleryImages, setGalleryImages] = useState<CompressedProductImage[]>([]);
@@ -43,6 +44,7 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
 
   async function preparePrimaryImage(file: File | null) {
     if (!file) return;
+    setRecentlySaved(false);
     setProcessingImages(true);
     setFeedback(null);
     try {
@@ -56,6 +58,7 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
 
   async function prepareGalleryImages(files: FileList | null) {
     if (!files?.length) return;
+    setRecentlySaved(false);
     const available = MAX_PRODUCT_IMAGES - 1 - galleryImages.length;
     if (files.length > available) {
       setFeedback({ type: "error", message: `Você pode adicionar mais ${available} ${available === 1 ? "imagem" : "imagens"}.` });
@@ -93,6 +96,7 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
     }
 
     setSaving(true);
+    setRecentlySaved(false);
     const requestData = new FormData();
     requestData.set("name", name);
     requestData.set("price", String(price));
@@ -113,6 +117,7 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
       setCategory("Lábios");
       setPrimaryImage(null);
       setGalleryImages([]);
+      setRecentlySaved(true);
       setFeedback({ type: "success", message: `${name} foi adicionado ao estoque.` });
       onCreated?.();
     }
@@ -155,7 +160,10 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
         </FormField>
         <div className="lg:col-span-2">
           {feedback && <FeedbackMessage feedback={feedback} />}
-          <button type="submit" disabled={saving || processingImages} className="mt-5 min-h-14 rounded-full bg-brand px-7 text-sm font-extrabold text-white shadow-lg shadow-brand/20 disabled:opacity-60">{processingImages ? "OTIMIZANDO IMAGENS..." : saving ? "SALVANDO..." : "ADICIONAR PRODUTO"}</button>
+          <button type="submit" disabled={saving || processingImages} className={`relative mt-5 min-h-14 overflow-hidden rounded-full px-7 text-sm font-extrabold text-white shadow-lg transition-all duration-300 disabled:cursor-wait ${recentlySaved ? "bg-emerald-600 shadow-emerald-700/15" : "bg-brand shadow-brand/20"}`}>
+            <span className="relative z-10">{processingImages ? "OTIMIZANDO IMAGENS..." : saving ? "SALVANDO PRODUTO..." : recentlySaved ? "✓ PRODUTO ADICIONADO" : "ADICIONAR PRODUTO"}</span>
+            {(processingImages || saving) && <span aria-hidden="true" className={`absolute inset-y-0 left-0 bg-brand-strong transition-[width] duration-700 ease-out ${processingImages ? "w-2/5" : "w-4/5"}`} />}
+          </button>
         </div>
       </form>
     </section>

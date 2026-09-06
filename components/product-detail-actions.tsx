@@ -5,6 +5,7 @@ import { HeartIcon } from "@/components/icons";
 import { useCart } from "@/components/cart-provider";
 import { useFavorites } from "@/components/favorites-provider";
 import type { CartProduct } from "@/lib/cart-store";
+import { flyProductToCart } from "@/lib/fly-to-cart";
 
 export function ProductDetailActions({ product }: { product: CartProduct }) {
   const { addProduct } = useCart();
@@ -13,6 +14,7 @@ export function ProductDetailActions({ product }: { product: CartProduct }) {
   const isFavorite = favoriteIds.has(product.id);
 
   function addToCart() {
+    flyProductToCart(document.querySelector<HTMLElement>("[data-product-hero-image]"));
     addProduct(product);
     setJustAdded(true);
     window.setTimeout(() => setJustAdded(false), 1200);

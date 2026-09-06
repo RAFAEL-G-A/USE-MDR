@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ClipboardEvent, FormEvent, KeyboardEvent } from "react";
 import { FunctionsHttpError, type Session } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -8,6 +9,8 @@ type Feedback =
   | { type: "success"; message: string }
   | { type: "error"; message: string }
   | null;
+
+const ADMIN_CODE_LENGTH = 6;
 
 async function functionErrorMessage(error: unknown, fallback: string) {
   if (error instanceof FunctionsHttpError) {
@@ -27,7 +30,9 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
   const [requestingCode, setRequestingCode] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [codeDigits, setCodeDigits] = useState(() => Array<string>(ADMIN_CODE_LENGTH).fill(""));
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const user = session?.user ?? null;
 
   useEffect(() => {
@@ -88,7 +93,9 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
       setFeedback({ type: "error", message: await functionErrorMessage(error, "Não foi possível enviar o código.") });
     } else {
       setCodeSent(true);
+      setCodeDigits(Array<string>(ADMIN_CODE_LENGTH).fill(""));
       setFeedback({ type: "success", message: "Código enviado. Verifique a caixa de entrada e a pasta de spam." });
+      window.setTimeout(() => codeInputRefs.current[0]?.focus(), 0);
     }
     setRequestingCode(false);
   }
@@ -97,8 +104,12 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
     event.preventDefault();
     setVerifyingCode(true);
     setFeedback(null);
-    const formData = new FormData(event.currentTarget);
-    const code = String(formData.get("code") ?? "").trim();
+    const code = codeDigits.join("");
+    if (code.length !== ADMIN_CODE_LENGTH) {
+      setFeedback({ type: "error", message: "Digite os seis números do código." });
+      setVerifyingCode(false);
+      return;
+    }
     const { data, error } = await supabase.functions.invoke("verify-admin-code", { body: { code } });
     if (error) {
       setFeedback({ type: "error", message: await functionErrorMessage(error, "Código inválido ou expirado.") });
@@ -113,6 +124,29 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
       setFeedback(null);
     }
     setVerifyingCode(false);
+  }
+
+  function distributeCode(startIndex: number, value: string) {
+    const numbers = value.replace(/\D/g, "").slice(0, ADMIN_CODE_LENGTH - startIndex);
+    if (!numbers) return;
+    setCodeDigits((current) => {
+      const next = [...current];
+      numbers.split("").forEach((number, offset) => { next[startIndex + offset] = number; });
+      return next;
+    });
+    const nextIndex = Math.min(startIndex + numbers.length, ADMIN_CODE_LENGTH - 1);
+    window.setTimeout(() => codeInputRefs.current[nextIndex]?.focus(), 0);
+  }
+
+  function handleCodeKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Backspace" && !codeDigits[index] && index > 0) codeInputRefs.current[index - 1]?.focus();
+    if (event.key === "ArrowLeft" && index > 0) codeInputRefs.current[index - 1]?.focus();
+    if (event.key === "ArrowRight" && index < ADMIN_CODE_LENGTH - 1) codeInputRefs.current[index + 1]?.focus();
+  }
+
+  function handleCodePaste(event: ClipboardEvent<HTMLDivElement>) {
+    event.preventDefault();
+    distributeCode(0, event.clipboardData.getData("text"));
   }
 
   if (checkingSession || checkingAccess) return <AccessCard><p className="text-sm text-muted">Verificando acesso administrativo...</p></AccessCard>;
@@ -143,7 +177,34 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
           <button type="button" onClick={handleRequestCode} disabled={requestingCode} className="mt-7 min-h-13 w-full rounded-full bg-brand px-6 text-sm font-extrabold text-white disabled:opacity-60">{requestingCode ? "ENVIANDO..." : "ENVIAR CÓDIGO POR E-MAIL"}</button>
         ) : (
           <form onSubmit={handleVerifyCode} className="mt-7 space-y-5">
-            <GateField label="Código de seis dígitos" htmlFor="admin-code"><input id="admin-code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" required minLength={6} maxLength={6} pattern="[0-9]{6}" className="form-control text-center text-2xl font-bold tracking-[0.35em]" placeholder="000000" /></GateField>
+            <fieldset>
+              <legend className="text-xs font-extrabold uppercase tracking-[0.1em] text-foreground">Código de seis dígitos</legend>
+              <div className="mt-3 grid grid-cols-6 gap-2" onPaste={handleCodePaste}>
+                {codeDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(element) => { codeInputRefs.current[index] = element; }}
+                    id={index === 0 ? "admin-code" : undefined}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete={index === 0 ? "one-time-code" : "off"}
+                    aria-label={`Dígito ${index + 1} do código`}
+                    value={digit}
+                    maxLength={index === 0 ? ADMIN_CODE_LENGTH : 1}
+                    onChange={(event) => {
+                      const numbers = event.target.value.replace(/\D/g, "");
+                      if (numbers.length > 1) distributeCode(index, numbers);
+                      else {
+                        setCodeDigits((current) => current.map((item, itemIndex) => itemIndex === index ? numbers : item));
+                        if (numbers && index < ADMIN_CODE_LENGTH - 1) codeInputRefs.current[index + 1]?.focus();
+                      }
+                    }}
+                    onKeyDown={(event) => handleCodeKeyDown(index, event)}
+                    className="aspect-square min-w-0 rounded-2xl border border-brand-border bg-white text-center text-xl font-extrabold text-foreground outline-none transition-all duration-200 focus:-translate-y-1 focus:border-brand focus:shadow-[0_10px_24px_rgb(233_30_99_/_16%)]"
+                  />
+                ))}
+              </div>
+            </fieldset>
             <button type="submit" disabled={verifyingCode} className="min-h-13 w-full rounded-full bg-brand px-6 text-sm font-extrabold text-white disabled:opacity-60">{verifyingCode ? "VERIFICANDO..." : "CONFIRMAR CÓDIGO"}</button>
             <button type="button" onClick={handleRequestCode} disabled={requestingCode} className="w-full text-xs font-bold text-brand">Enviar outro código</button>
           </form>

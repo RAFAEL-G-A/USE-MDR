@@ -196,3 +196,13 @@ incorporadas ao catálogo.
   produtos vinculados.
 - Botão de pré-visualização abre a categoria diretamente no catálogo.
 - Histórico protegido registra as alterações recentes com data e horário.
+
+## 6 de setembro de 2026 — experiência mobile mais fluida
+
+- A barra inferior permanece visível enquanto a cliente alterna entre Início,
+  Buscar, Favoritos e Carrinho.
+- O destaque da navegação desliza suavemente até a nova opção selecionada.
+- Ao adicionar um item, a fotografia do próprio produto percorre uma trajetória
+  até o carrinho e confirma visualmente a ação.
+- A interação mantém a loja leve, acessível e sem criar novas consultas ao
+  catálogo.

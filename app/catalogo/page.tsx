@@ -5,7 +5,6 @@ import { Brand } from "@/components/brand";
 import { CatalogProductPagination } from "@/components/catalog-product-pagination";
 import { CatalogScrollTarget } from "@/components/catalog-scroll-target";
 import { ArrowLeftIcon, SearchIcon } from "@/components/icons";
-import { MobileNavigation } from "@/components/mobile-navigation";
 import type { ProductCardItem } from "@/components/product-card";
 import { getCatalogConfiguration } from "@/lib/catalog-configuration";
 import { demoProducts } from "@/lib/demo-products";
@@ -78,7 +77,6 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
           {filteredProducts.length ? <CatalogProductPagination key={`${query}|${selectedCategory}|${selectedSubcategory}`} products={filteredProducts} initialPage={initialPage} /> : <div className="rounded-[1.75rem] border border-dashed border-brand-border bg-brand-soft/40 px-6 py-12 text-center"><p className="font-serif text-2xl">Nenhum produto encontrado</p><p className="mt-2 text-sm text-muted">Tente outro termo ou explore uma categoria diferente.</p></div>}
         </section>
       </main>
-      <MobileNavigation active="catalog" />
     </div>
   );
 }

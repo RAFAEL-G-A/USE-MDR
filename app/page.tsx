@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { HeroCarousel } from "@/components/hero-carousel";
-import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
 import { demoProducts } from "@/lib/demo-products";
 import { getCategoryVisuals } from "@/lib/category-images";
@@ -77,7 +76,6 @@ export default async function Home() {
           </div>
         </section>
       </main>
-      <MobileNavigation active="home" />
     </div>
   );
 }

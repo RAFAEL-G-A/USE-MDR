@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
-import { MobileNavigation } from "@/components/mobile-navigation";
 import { TrashIcon } from "@/components/icons";
 import { useCart } from "@/components/cart-provider";
 import { createWhatsAppOrderUrl, normalizeWhatsAppNumber } from "@/lib/whatsapp";
@@ -40,7 +39,6 @@ export function CartPageClient() {
           </div>
         )}
       </main>
-      <MobileNavigation active="cart" />
     </div>
   );
 }
