@@ -43,7 +43,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         <div className="relative mx-auto flex max-w-7xl flex-col items-center justify-center px-5 py-3 md:px-8 md:py-4">
           <Link href="/" prefetch={false} aria-label="Voltar para a página inicial" className="absolute left-5 flex size-10 items-center justify-center rounded-full border border-brand-border bg-white text-foreground md:hidden"><ArrowLeftIcon className="size-5" /></Link>
           <Brand />
-          <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal"><Link href="/" prefetch={false}>Início</Link><Link href="/catalogo" prefetch={false} className="text-brand">Buscar</Link><Link href="/favoritos" prefetch={false}>Favoritos</Link><Link href="/carrinho" prefetch={false}>Carrinho</Link></nav>
+          <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal"><Link href="/" prefetch={false}>Início</Link><Link href="/catalogo" prefetch={false} className="text-brand">Buscar</Link><Link href="/favoritos" prefetch={false} data-favorites-target>Favoritos</Link><Link href="/carrinho" prefetch={false} data-cart-target>Carrinho</Link></nav>
         </div>
       </header>
 

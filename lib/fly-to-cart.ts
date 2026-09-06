@@ -12,7 +12,7 @@ export function buildCartFlightKeyframes(deltaX: number, deltaY: number): Keyfra
   ];
 }
 
-function pulseCart(target: HTMLElement) {
+function pulseTarget(target: HTMLElement) {
   target.animate(
     [
       { transform: "scale(1)" },
@@ -23,10 +23,17 @@ function pulseCart(target: HTMLElement) {
   );
 }
 
-export function flyProductToCart(source: HTMLElement | null) {
+function visibleTarget(selector: string) {
+  return [...document.querySelectorAll<HTMLElement>(selector)].find((candidate) => {
+    const rect = candidate.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && window.getComputedStyle(candidate).visibility !== "hidden";
+  }) ?? null;
+}
+
+function flyProductToTarget(source: HTMLElement | null, targetSelector: string) {
   if (!source || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const target = document.querySelector<HTMLElement>("[data-cart-target]");
+  const target = visibleTarget(targetSelector);
   const sourceImage = source.matches("img") ? source : source.querySelector<HTMLElement>("img");
   if (!target || !sourceImage) return;
   if (typeof sourceImage.animate !== "function" || typeof target.animate !== "function") return;
@@ -66,7 +73,15 @@ export function flyProductToCart(source: HTMLElement | null) {
   );
 
   void animation.finished
-    .then(() => pulseCart(target))
+    .then(() => pulseTarget(target))
     .catch(() => undefined)
     .finally(() => clone.remove());
+}
+
+export function flyProductToCart(source: HTMLElement | null) {
+  flyProductToTarget(source, "[data-cart-target]");
+}
+
+export function flyProductToFavorites(source: HTMLElement | null) {
+  flyProductToTarget(source, "[data-favorites-target]");
 }

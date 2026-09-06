@@ -38,8 +38,8 @@ export default async function Home() {
           <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal">
             <Link href="/" prefetch={false} className="text-brand">Início</Link>
             <Link href="/catalogo" prefetch={false} className="transition-colors hover:text-brand">Buscar</Link>
-            <Link href="/favoritos" prefetch={false} className="transition-colors hover:text-brand">Favoritos</Link>
-            <Link href="/carrinho" prefetch={false} className="transition-colors hover:text-brand">Carrinho</Link>
+            <Link href="/favoritos" prefetch={false} data-favorites-target className="transition-colors hover:text-brand">Favoritos</Link>
+            <Link href="/carrinho" prefetch={false} data-cart-target className="transition-colors hover:text-brand">Carrinho</Link>
           </nav>
         </div>
       </header>

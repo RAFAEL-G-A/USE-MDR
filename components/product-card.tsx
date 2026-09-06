@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { HeartIcon } from "@/components/icons";
 import { useCart } from "@/components/cart-provider";
 import { useFavorites } from "@/components/favorites-provider";
-import { flyProductToCart } from "@/lib/fly-to-cart";
+import { flyProductToCart, flyProductToFavorites } from "@/lib/fly-to-cart";
 import Link from "next/link";
 
 export type ProductCardItem = {
@@ -40,12 +40,17 @@ export function ProductCard({ product, showNew = false, eager = false }: { produ
     window.setTimeout(() => setJustAdded(false), 1200);
   }
 
+  function handleToggleFavorite() {
+    if (!isFavorite) flyProductToFavorites(imageRef.current);
+    toggleFavorite(portableProduct);
+  }
+
   return (
     <article className="group min-w-0">
       <div ref={imageRef} className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-brand-border/70 bg-brand-soft shadow-sm">
         <Link href={`/produto/${encodeURIComponent(product.id)}`} prefetch={false} aria-label={`Ver detalhes de ${product.name}`} className="absolute inset-0"><Image src={product.image} alt={product.name} fill loading={eager ? "eager" : "lazy"} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" /></Link>
         {showNew && <span className="absolute left-2.5 top-2.5 rounded-full bg-brand px-2.5 py-1 text-[0.58rem] font-extrabold tracking-wide text-white sm:left-4 sm:top-4 sm:text-[0.65rem]">NOVO</span>}
-        <button type="button" onClick={() => toggleFavorite(portableProduct)} aria-label={`${isFavorite ? "Remover" : "Adicionar"} ${product.name} ${isFavorite ? "dos" : "aos"} favoritos`} className={`absolute right-2.5 top-2.5 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm sm:right-4 sm:top-4 sm:size-10 ${isFavorite ? "text-brand" : "text-foreground"}`}>
+        <button type="button" onClick={handleToggleFavorite} aria-label={`${isFavorite ? "Remover" : "Adicionar"} ${product.name} ${isFavorite ? "dos" : "aos"} favoritos`} className={`absolute right-2.5 top-2.5 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm sm:right-4 sm:top-4 sm:size-10 ${isFavorite ? "text-brand" : "text-foreground"}`}>
           <HeartIcon className="size-4 sm:size-5" filled={isFavorite} />
         </button>
       </div>

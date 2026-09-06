@@ -31,6 +31,7 @@ ou passar por um checkout tradicional.
 - favoritos e carrinho preservados no próprio navegador;
 - navegação mobile persistente, com transições suaves entre as páginas;
 - animação da imagem real do produto até o carrinho ao adicionar um item;
+- animação da imagem real até Favoritos ao salvar um produto;
 - alteração de quantidades e cálculo automático do total;
 - pedido para o WhatsApp com produtos, quantidades, subtotais e total;
 - seção de lançamentos adaptável à quantidade disponível;

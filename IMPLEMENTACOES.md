@@ -6,6 +6,22 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 
 [Voltar ao README](README.md) · [Abrir o catálogo](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
+## 6 de setembro de 2026 — movimento na jornada da cliente
+
+### Implementações
+
+- Animação da própria foto do produto até o carrinho ao adicionar um item.
+- Animação da própria foto até Favoritos ao salvar um produto, sem repetir o
+  efeito quando a cliente remove o favorito.
+- Destino responsivo das animações na navegação mobile e desktop.
+- Respeito à preferência de movimento reduzido configurada no aparelho.
+
+### Verificações
+
+- Testes automatizados da trajetória, dos destinos e da remoção do elemento
+  temporário depois da animação.
+- Nenhuma nova consulta ao Supabase para executar os efeitos visuais.
+
 ## 7 de agosto de 2026 — fundação da versão web
 
 ### Implementações

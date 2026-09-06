@@ -11,7 +11,7 @@ test("a trajetória termina exatamente no centro do carrinho", () => {
   assert.equal(frames.at(-1)?.opacity, 0);
 });
 
-test("o efeito usa a imagem real, respeita movimento reduzido e limpa o clone", () => {
+test("os efeitos de carrinho e favoritos usam a imagem real e limpam o clone", () => {
   const source = readFileSync(new URL("../lib/fly-to-cart.ts", import.meta.url), "utf8");
   const card = readFileSync(new URL("../components/product-card.tsx", import.meta.url), "utf8");
   const details = readFileSync(new URL("../components/product-detail-actions.tsx", import.meta.url), "utf8");
@@ -22,6 +22,11 @@ test("o efeito usa a imagem real, respeita movimento reduzido e limpa o clone", 
   assert.match(source, /typeof sourceImage\.animate !== "function"/);
   assert.match(source, /\.finally\(\(\) => clone\.remove\(\)\)/);
   assert.match(card, /flyProductToCart\(imageRef\.current\)/);
+  assert.match(card, /if \(!isFavorite\) flyProductToFavorites\(imageRef\.current\)/);
   assert.match(details, /data-product-hero-image/);
+  assert.match(details, /if \(!isFavorite\) flyProductToFavorites/);
   assert.match(navigation, /data-cart-target/);
+  assert.match(navigation, /data-favorites-target/);
+  assert.match(source, /visibleTarget/);
+  assert.match(source, /\[data-favorites-target\]/);
 });
