@@ -6,6 +6,22 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 
 [Voltar ao README](README.md) · [Abrir o catálogo](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
+## 6 de setembro de 2026 — movimento na jornada da cliente
+
+### Implementações
+
+- Animação da própria foto do produto até o carrinho ao adicionar um item.
+- Animação da própria foto até Favoritos ao salvar um produto, sem repetir o
+  efeito quando a cliente remove o favorito.
+- Destino responsivo das animações na navegação mobile e desktop.
+- Respeito à preferência de movimento reduzido configurada no aparelho.
+
+### Verificações
+
+- Testes automatizados da trajetória, dos destinos e da remoção do elemento
+  temporário depois da animação.
+- Nenhuma nova consulta ao Supabase para executar os efeitos visuais.
+
 ## 7 de agosto de 2026 — fundação da versão web
 
 ### Implementações
@@ -227,6 +243,42 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 - Home, catálogo, estoque e nova área de categorias responderam normalmente na
   prévia local.
 - Nenhum deploy desta etapa realizado antes do relatório e da autorização.
+
+## 6 de setembro de 2026 — navegação e interações mais fluidas
+
+### Implementações
+
+- Navegação inferior mobile transformada em um elemento persistente entre
+  Início, Buscar, Favoritos e Carrinho.
+- Indicador rosa animado com deslizamento suave de 650 ms entre os acessos.
+- Transição discreta de entrada para o conteúdo das páginas públicas.
+- Animação da fotografia real do produto percorrendo uma trajetória curva até
+  o ícone do carrinho.
+- Redução, desaparecimento e pulso do carrinho sincronizados com a chegada do
+  produto.
+- Efeito disponível nos cards do catálogo, nos favoritos, nos lançamentos e na
+  página individual do produto.
+- Código administrativo de seis dígitos reorganizado em campos individuais,
+  com avanço automático e suporte a colagem.
+- Estados visuais de otimização, salvamento e conclusão no cadastro de
+  produtos.
+
+### Desempenho e acessibilidade
+
+- Animações implementadas com recursos nativos do navegador, sem nova
+  dependência e sem novas requisições ao Supabase ou Cloudflare.
+- O efeito reutiliza a imagem já carregada do produto e remove o elemento
+  temporário após a conclusão.
+- Preferência de movimento reduzido respeitada automaticamente.
+- Navegadores antigos sem suporte à API de animação continuam adicionando o
+  produto normalmente, sem erro.
+
+### Verificações
+
+- 76 testes automatizados aprovados.
+- Lint, TypeScript e build Next.js aprovados.
+- Testes específicos confirmam trajetória, limpeza do elemento temporário,
+  acessibilidade e persistência da navbar.
 
 ## Princípios mantidos em todas as etapas
 

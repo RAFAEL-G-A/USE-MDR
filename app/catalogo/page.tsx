@@ -5,7 +5,6 @@ import { Brand } from "@/components/brand";
 import { CatalogProductPagination } from "@/components/catalog-product-pagination";
 import { CatalogScrollTarget } from "@/components/catalog-scroll-target";
 import { ArrowLeftIcon, SearchIcon } from "@/components/icons";
-import { MobileNavigation } from "@/components/mobile-navigation";
 import type { ProductCardItem } from "@/components/product-card";
 import { getCatalogConfiguration } from "@/lib/catalog-configuration";
 import { demoProducts } from "@/lib/demo-products";
@@ -44,7 +43,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         <div className="relative mx-auto flex max-w-7xl flex-col items-center justify-center px-5 py-3 md:px-8 md:py-4">
           <Link href="/" prefetch={false} aria-label="Voltar para a página inicial" className="absolute left-5 flex size-10 items-center justify-center rounded-full border border-brand-border bg-white text-foreground md:hidden"><ArrowLeftIcon className="size-5" /></Link>
           <Brand />
-          <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal"><Link href="/" prefetch={false}>Início</Link><Link href="/catalogo" prefetch={false} className="text-brand">Buscar</Link><Link href="/favoritos" prefetch={false}>Favoritos</Link><Link href="/carrinho" prefetch={false}>Carrinho</Link></nav>
+          <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal"><Link href="/" prefetch={false}>Início</Link><Link href="/catalogo" prefetch={false} className="text-brand">Buscar</Link><Link href="/favoritos" prefetch={false} data-favorites-target>Favoritos</Link><Link href="/carrinho" prefetch={false} data-cart-target>Carrinho</Link></nav>
         </div>
       </header>
 
@@ -78,7 +77,6 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
           {filteredProducts.length ? <CatalogProductPagination key={`${query}|${selectedCategory}|${selectedSubcategory}`} products={filteredProducts} initialPage={initialPage} /> : <div className="rounded-[1.75rem] border border-dashed border-brand-border bg-brand-soft/40 px-6 py-12 text-center"><p className="font-serif text-2xl">Nenhum produto encontrado</p><p className="mt-2 text-sm text-muted">Tente outro termo ou explore uma categoria diferente.</p></div>}
         </section>
       </main>
-      <MobileNavigation active="catalog" />
     </div>
   );
 }

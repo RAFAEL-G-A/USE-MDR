@@ -25,6 +25,7 @@
     "test:session": "node --test tests/admin-session-duration.test.ts",
     "test:security": "node --test tests/admin-api-security.test.ts",
     "test:storefront": "node --test tests/storefront-journey.test.ts",
+    "test:motion": "node --test tests/fly-to-cart.test.ts",
     "test:all": "node --test tests/*.test.ts"
   },
   "dependencies": {

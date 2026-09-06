@@ -6,6 +6,15 @@ celular.
 
 [Conhecer o catálogo](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
+## 6 de setembro de 2026 — produtos em movimento
+
+- A foto do produto agora percorre um caminho suave até o carrinho ao ser
+  adicionada.
+- Ao favoritar, a mesma foto segue até o coração da navegação, reforçando
+  visualmente que o produto foi salvo.
+- Os efeitos funcionam no celular e no desktop e não fazem novas requisições ao
+  catálogo.
+
 ## 7 de agosto de 2026 — o catálogo ganhou sua versão web
 
 - Criação do projeto em Next.js, separado do aplicativo mobile anterior.
@@ -196,3 +205,13 @@ incorporadas ao catálogo.
   produtos vinculados.
 - Botão de pré-visualização abre a categoria diretamente no catálogo.
 - Histórico protegido registra as alterações recentes com data e horário.
+
+## 6 de setembro de 2026 — experiência mobile mais fluida
+
+- A barra inferior permanece visível enquanto a cliente alterna entre Início,
+  Buscar, Favoritos e Carrinho.
+- O destaque da navegação desliza suavemente até a nova opção selecionada.
+- Ao adicionar um item, a fotografia do próprio produto percorre uma trajetória
+  até o carrinho e confirma visualmente a ação.
+- A interação mantém a loja leve, acessível e sem criar novas consultas ao
+  catálogo.
