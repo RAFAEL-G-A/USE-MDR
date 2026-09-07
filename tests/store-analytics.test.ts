@@ -20,6 +20,28 @@ test("não coleta dados pessoais nem o conteúdo do pedido", () => {
   assert.doesNotMatch(storageColumns, /\b(email|phone|ip_address|user_agent|customer_name|product_name|message)\b/i);
   assert.match(cart, /cartItemCount: totalQuantity, cartTotal: total/);
   assert.doesNotMatch(cart, /trackStoreEvent\([^)]*(items|whatsappUrl)/);
+  assert.match(publicFunction, /Object\.keys\(body\)\.some/);
+  assert.match(publicFunction, /campos não permitidos/);
+});
+
+test("rejeita formatos e payloads excessivos antes de acessar o banco", () => {
+  assert.match(publicFunction, /content-type/);
+  assert.match(publicFunction, /MAX_BODY_BYTES = 2_048/);
+  assert.match(publicFunction, /new TextEncoder\(\)\.encode\(rawBody\)\.byteLength/);
+  assert.match(publicFunction, /, 413\)/);
+});
+
+test("respostas públicas não são armazenadas em cache e têm id de requisição", () => {
+  assert.match(publicFunction, /"Cache-Control": "no-store"/);
+  assert.match(publicFunction, /"X-Request-Id": requestId\(request\)/);
+  assert.match(publicFunction, /REQUEST_ID_PATTERN/);
+});
+
+test("logs de falha são estruturados e não incluem payload ou identificadores do visitante", () => {
+  assert.match(publicFunction, /console\.error\(JSON\.stringify/);
+  assert.match(publicFunction, /error: "store_event_insert_failed"/);
+  const logBlock = publicFunction.match(/console\.error\(JSON\.stringify\(\{[\s\S]*?\}\)\);/)?.[0] ?? "";
+  assert.doesNotMatch(logBlock, /visitorId|sessionId|rawBody|body|user-agent|origin/i);
 });
 
 test("mantém a leitura das métricas restrita ao administrador verificado", () => {

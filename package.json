@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit --incremental false",
+    "security:scan": "node scripts/check-public-secrets.mjs",
     "build:cloudflare": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -23,10 +25,11 @@
     "test:hero": "node --test tests/hero-fade-toggle.test.ts",
     "test:analytics": "node --test tests/store-analytics.test.ts",
     "test:session": "node --test tests/admin-session-duration.test.ts",
-    "test:security": "node --test tests/admin-api-security.test.ts",
+    "test:security": "node --test tests/admin-api-security.test.ts tests/admin-audit.test.ts tests/security-headers.test.ts tests/health-route.test.ts",
     "test:storefront": "node --test tests/storefront-journey.test.ts",
     "test:motion": "node --test tests/fly-to-cart.test.ts",
-    "test:all": "node --test tests/*.test.ts"
+    "test:all": "node --test tests/*.test.ts",
+    "quality": "npm run lint && npm run typecheck && npm run test:all && npm run security:scan && npm run build"
   },
   "dependencies": {
     "@jsquash/webp": "1.5.0",

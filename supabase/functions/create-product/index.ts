@@ -4,6 +4,7 @@ import {
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 import { isValidCatalogSelection } from "../_shared/catalog-validation.ts";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -150,6 +151,14 @@ Deno.serve(async (request) => {
       await context.adminClient.storage.from("products").remove(uploadedImages.map((item) => item.path));
       throw new Error(`Não foi possível salvar o preço de custo: ${costError.message}`);
     }
+
+    await writeAdminAudit(request, context, {
+      action: "create_product",
+      resourceType: "product",
+      resourceId: String(product.id),
+      result: "success",
+      metadata: { category, stock, gallery_images: galleryRows.length },
+    });
 
     return json(request, { ok: true, product: { ...product, cost_price: costPrice, images: galleryRows } }, 201);
   } catch (error) {

@@ -227,12 +227,12 @@ export function AdminFinances() {
     </header>
 
     <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Seções financeiras">
-      {(["overview", "sales", "expenses", "reports"] as Section[]).map((item) => <button key={item} type="button" onClick={() => setSection(item)} className={`min-h-11 shrink-0 rounded-full px-5 text-xs font-extrabold ${section === item ? "bg-brand text-white" : "border border-brand-border bg-white text-brand"}`}>{({ overview: "Resumo", sales: "Vendas", expenses: "Despesas", reports: "Relatórios" } as Record<Section, string>)[item]}</button>)}
+      {(["overview", "sales", "expenses", "reports"] as Section[]).map((item) => <button key={item} type="button" role="tab" aria-selected={section === item} onClick={() => setSection(item)} className={`min-h-11 shrink-0 rounded-full px-5 text-xs font-extrabold ${section === item ? "bg-brand text-white" : "border border-brand-border bg-white text-brand"}`}>{({ overview: "Resumo", sales: "Vendas", expenses: "Despesas", reports: "Relatórios" } as Record<Section, string>)[item]}</button>)}
     </div>
 
     <section className="rounded-[2rem] border border-brand-border bg-white p-4 shadow-soft sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-2">{(Object.keys(periodLabels) as Period[]).map((item) => <button key={item} type="button" onClick={() => { setLoading(true); setFeedback(null); setPeriod(item); }} className={`rounded-full px-4 py-2 text-xs font-bold ${period === item ? "bg-brand-soft text-brand" : "text-muted"}`}>{periodLabels[item]}</button>)}</div>
+        <div className="flex gap-2" role="group" aria-label="Período financeiro">{(Object.keys(periodLabels) as Period[]).map((item) => <button key={item} type="button" aria-pressed={period === item} onClick={() => { setLoading(true); setFeedback(null); setPeriod(item); }} className={`rounded-full px-4 py-2 text-xs font-bold ${period === item ? "bg-brand-soft text-brand" : "text-muted"}`}>{periodLabels[item]}</button>)}</div>
         <label className="flex items-center gap-2 text-xs font-bold text-muted">Referência <input type="date" value={anchor} onChange={(event) => { setLoading(true); setFeedback(null); setAnchor(event.target.value); }} className="rounded-xl border border-brand-border px-3 py-2 text-foreground" /></label>
       </div>
       {range && <p className="mt-3 text-xs text-muted">Período comercial: {formatStoreDate(`${range.start}T12:00:00-03:00`)} a {formatStoreDate(`${range.end}T12:00:00-03:00`)} · horário de Pernambuco</p>}

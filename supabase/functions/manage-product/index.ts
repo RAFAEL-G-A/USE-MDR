@@ -4,6 +4,7 @@ import {
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 import { isValidCatalogSelection } from "../_shared/catalog-validation.ts";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -108,7 +109,7 @@ Deno.serve(async (request) => {
 
     const { data: existing, error: readError } = await context.adminClient
       .from("products")
-      .select("id, image_url")
+      .select("id, image_url, stock")
       .eq("id", productId)
       .maybeSingle();
     if (readError || !existing) return json(request, { error: "Produto não encontrado." }, 404);
@@ -128,6 +129,12 @@ Deno.serve(async (request) => {
       await context.adminClient.from("product_costs").delete().eq("product_id", productId);
       const pathsToDelete = [oldImagePath, ...(existingGallery ?? []).map((item) => item.storage_path)].filter((path): path is string => Boolean(path));
       if (pathsToDelete.length) await context.adminClient.storage.from("products").remove(pathsToDelete);
+      await writeAdminAudit(request, context, {
+        action: "delete_product",
+        resourceType: "product",
+        resourceId: productId,
+        result: "success",
+      });
       return json(request, { ok: true, id: productId, deleted: true });
     }
 
@@ -152,6 +159,13 @@ Deno.serve(async (request) => {
       if (oldImagePath && oldImagePath !== replacementPath) {
         await context.adminClient.storage.from("products").remove([oldImagePath]);
       }
+      await writeAdminAudit(request, context, {
+        action: "image_change",
+        resourceType: "product",
+        resourceId: productId,
+        result: "success",
+        metadata: { operation: "replace_primary" },
+      });
       return json(request, { ok: true, id: productId, image_url: replacementUrl });
     }
 
@@ -280,6 +294,23 @@ Deno.serve(async (request) => {
       .select("id, image_url, storage_path, sort_order")
       .eq("product_id", productId)
       .order("sort_order", { ascending: true });
+
+    await writeAdminAudit(request, context, {
+      action: "update_product",
+      resourceType: "product",
+      resourceId: productId,
+      result: "success",
+      metadata: { category, gallery_images: updatedGallery?.length ?? 0 },
+    });
+    if (Number(existing.stock) !== stock) {
+      await writeAdminAudit(request, context, {
+        action: "stock_change",
+        resourceType: "product",
+        resourceId: productId,
+        result: "success",
+        metadata: { previous_stock: Number(existing.stock), new_stock: stock },
+      });
+    }
 
     return json(request, { ok: true, product: { ...product, cost_price: costPrice, images: updatedGallery ?? [] } });
   } catch (error) {

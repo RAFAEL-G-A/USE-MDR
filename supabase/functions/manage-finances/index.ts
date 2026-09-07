@@ -4,6 +4,7 @@ import {
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 
 type Period = "today" | "week" | "month";
 
@@ -133,6 +134,13 @@ Deno.serve(async (request) => {
       if (action === "update_expense" && !id) return json(request, { error: "Despesa não informada." }, 400);
       const { data, error } = await query.select("id, description, amount, category, occurred_at, notes, status, paid_at, created_at").single();
       if (error) throw new Error(`Não foi possível salvar a despesa: ${error.message}`);
+      await writeAdminAudit(request, context, {
+        action: "financial_change",
+        resourceType: "expense",
+        resourceId: String(data.id),
+        result: "success",
+        metadata: { operation: action, category, status },
+      });
       return json(request, { ok: true, expense: data }, action === "create_expense" ? 201 : 200);
     }
 
@@ -141,6 +149,13 @@ Deno.serve(async (request) => {
       if (!id) return json(request, { error: "Despesa não informada." }, 400);
       const { error } = await context.adminClient.from("expenses").update({ status: "void", updated_at: new Date().toISOString() }).eq("id", id);
       if (error) throw new Error(`Não foi possível excluir a despesa: ${error.message}`);
+      await writeAdminAudit(request, context, {
+        action: "financial_change",
+        resourceType: "expense",
+        resourceId: id,
+        result: "success",
+        metadata: { operation: "void" },
+      });
       return json(request, { ok: true, id });
     }
 
@@ -162,6 +177,13 @@ Deno.serve(async (request) => {
         updated_at: new Date().toISOString(),
       }).eq("id", 1).select("recipient_email, daily_enabled, weekly_enabled, monthly_enabled, timezone, updated_at").single();
       if (error) throw new Error(`Não foi possível salvar as configurações: ${error.message}`);
+      await writeAdminAudit(request, context, {
+        action: "financial_change",
+        resourceType: "financial_report_settings",
+        resourceId: "1",
+        result: "success",
+        metadata: { operation: "update_settings" },
+      });
       return json(request, { ok: true, settings: data });
     }
 
@@ -179,6 +201,12 @@ Deno.serve(async (request) => {
         p_generated_by: context.user.id,
       });
       if (error) throw new Error(`Não foi possível gerar o fechamento: ${error.message}`);
+      await writeAdminAudit(request, context, {
+        action: "financial_change",
+        resourceType: "financial_closure",
+        result: "success",
+        metadata: { operation: "create", period_type: periodType, period_start: periodStart, period_end: periodEnd },
+      });
       return json(request, { ok: true, closure: data });
     }
 

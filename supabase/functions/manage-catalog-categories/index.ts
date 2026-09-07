@@ -4,6 +4,7 @@ import {
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.112.2";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -103,6 +104,7 @@ Deno.serve(async (request) => {
           .eq("category_key", key);
         if (error) throw new Error(`Não foi possível alterar a visibilidade: ${error.message}`);
         await logChange(context.adminClient, context.user.id, isActive ? "activate_category" : "hide_category", key);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "toggle", is_active: isActive } });
         return json(request, { ok: true, is_active: isActive });
       }
 
@@ -113,6 +115,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível salvar a ordem: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "reorder_categories", item_count: keys.length } });
         return json(request, { ok: true });
       }
 
@@ -124,6 +127,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível salvar a ordem: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: key, result: "success", metadata: { operation: "reorder", item_count: names.length } });
         return json(request, { ok: true });
       }
 
@@ -136,6 +140,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível renomear a categoria: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "rename" } });
         return json(request, { ok: true, affected_products: affectedProducts });
       }
 
@@ -152,6 +157,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível renomear a subcategoria: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: key, result: "success", metadata: { operation: "rename" } });
         return json(request, { ok: true, affected_products: affectedProducts });
       }
 
@@ -173,6 +179,7 @@ Deno.serve(async (request) => {
           throw new Error(`Não foi possível adicionar a subcategoria: ${error.message}`);
         }
         await logChange(context.adminClient, context.user.id, "add_subcategory", key, { subcategory });
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: String(data.id), result: "success", metadata: { operation: "create", category_key: key } });
         return json(request, { ok: true, subcategory: data }, 201);
       }
 
@@ -193,6 +200,7 @@ Deno.serve(async (request) => {
           .eq("name", subcategory);
         if (error) throw new Error(`Não foi possível remover a subcategoria: ${error.message}`);
         await logChange(context.adminClient, context.user.id, "delete_subcategory", key, { subcategory });
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: key, result: "success", metadata: { operation: "delete" } });
         return json(request, { ok: true, deleted: true });
       }
 
@@ -243,6 +251,7 @@ Deno.serve(async (request) => {
         throw new Error(`Não foi possível criar a primeira subcategoria: ${subcategoryError.message}`);
       }
       await logChange(context.adminClient, context.user.id, "create_category", key, { name, first_subcategory: firstSubcategory });
+      await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "create" } });
       return json(request, { ok: true, category }, 201);
     }
 
@@ -272,6 +281,7 @@ Deno.serve(async (request) => {
         await context.adminClient.storage.from("products").remove([existing.image_path]);
       }
       await logChange(context.adminClient, context.user.id, "update_category_image", key);
+      await writeAdminAudit(request, context, { action: "image_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "update" } });
       return json(request, { ok: true, image_url: imageUrl });
     }
 

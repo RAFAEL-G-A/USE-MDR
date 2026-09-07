@@ -1,8 +1,20 @@
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import { createSecurityHeaders } from "./lib/security-headers";
+
+const isDevelopment = process.env.NODE_ENV === "development";
+const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.0.177"],
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: createSecurityHeaders({ isDevelopment, isProduction }),
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

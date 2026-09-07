@@ -4,6 +4,7 @@ import {
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -53,6 +54,7 @@ Deno.serve(async (request) => {
         .eq("category_key", categoryKey);
       if (deleteError) throw new Error(`Não foi possível restaurar a imagem padrão: ${deleteError.message}`);
       if (existing?.image_path) await context.adminClient.storage.from("products").remove([existing.image_path]);
+      await writeAdminAudit(request, context, { action: "image_change", resourceType: "category", resourceId: categoryKey, result: "success", metadata: { operation: "reset" } });
       return json(request, { ok: true, category_key: categoryKey, reset: true });
     }
 
@@ -84,6 +86,8 @@ Deno.serve(async (request) => {
     if (existing?.image_path && existing.image_path !== uploadedPath) {
       await context.adminClient.storage.from("products").remove([existing.image_path]);
     }
+
+    await writeAdminAudit(request, context, { action: "image_change", resourceType: "category", resourceId: categoryKey, result: "success", metadata: { operation: "save" } });
 
     return json(request, { ok: true, category });
   } catch (error) {

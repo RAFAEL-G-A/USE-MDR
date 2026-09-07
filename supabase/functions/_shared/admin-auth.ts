@@ -5,6 +5,18 @@ const DEFAULT_ORIGINS = [
   "https://use-mdr-beauty.netlify.app",
 ];
 
+const requestIds = new WeakMap<Request, string>();
+
+export function requestId(request: Request) {
+  const existing = requestIds.get(request);
+  if (existing) return existing;
+
+  const supplied = request.headers.get("x-request-id")?.trim() ?? "";
+  const id = /^[A-Za-z0-9._-]{8,64}$/.test(supplied) ? supplied : crypto.randomUUID();
+  requestIds.set(request, id);
+  return id;
+}
+
 export type AdminContext = {
   adminClient: SupabaseClient;
   sessionId: string;
@@ -32,7 +44,11 @@ export function corsHeaders(request: Request) {
 export function json(request: Request, body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: corsHeaders(request),
+    headers: {
+      ...corsHeaders(request),
+      "Cache-Control": "no-store",
+      "X-Request-Id": requestId(request),
+    },
   });
 }
 

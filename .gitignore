@@ -50,6 +50,7 @@ yarn-error.log*
 
 # supabase local metadata
 /supabase/.temp/
+/supabase/.branches/
 
 # typescript
 *.tsbuildinfo
