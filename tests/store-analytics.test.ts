@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const migration = readFileSync("supabase/migrations/20260819133000_store_analytics.sql", "utf8");
+const migration = readFileSync("supabase/migrations/20260819124516_store_analytics.sql", "utf8");
 const tracker = readFileSync("components/store-analytics-tracker.tsx", "utf8");
 const cart = readFileSync("components/cart-page-client.tsx", "utf8");
 const publicFunction = readFileSync("supabase/functions/track-store-event/index.ts", "utf8");

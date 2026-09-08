@@ -78,7 +78,7 @@ test("cada tentativa de OTP é reservada com atualização condicional", () => {
 
 test("a API pública de métricas limita origem, formato, robôs e duplicidade", () => {
   const source = functionSource("track-store-event");
-  const migration = readFileSync(new URL("../supabase/migrations/20260819133000_store_analytics.sql", import.meta.url), "utf8");
+  const migration = readFileSync(new URL("../supabase/migrations/20260819124516_store_analytics.sql", import.meta.url), "utf8");
   assert.match(source, /allowedOrigins\(\)\.includes\(origin\)/);
   assert.match(source, /BOT_PATTERN\.test/);
   assert.match(source, /EVENT_TYPES\.has\(eventType\)/);
