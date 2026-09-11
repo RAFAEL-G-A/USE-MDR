@@ -6,6 +6,31 @@ celular.
 
 [Conhecer o catálogo](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
+## 9 a 11 de setembro de 2026 — estoque inteligente, ofertas e equipe
+
+- Nova aba **Aquisições** registra entradas e atualiza automaticamente o estoque
+  e o custo médio ponderado de cada produto.
+- O preço de revenda pode ser ajustado na entrada sem perder o histórico do
+  custo real das unidades disponíveis.
+- Produtos podem receber preço promocional com percentual calculado
+  automaticamente, preço original riscado e selo sobre a foto.
+- A opção **Exibir também em Produtos com desconto** coloca o item na primeira
+  vitrine de ofertas sem removê-lo da categoria e subcategoria originais.
+- A imagem e os textos da vitrine de descontos agora podem ser personalizados
+  no painel, mantendo o mesmo padrão visual das demais categorias.
+- Nova aba **Usuários** permite que cada funcionário receba o próprio código de
+  acesso por e-mail, com atividade identificada no histórico.
+- Operador, Gerente e Proprietária passam a enxergar e acessar somente as áreas
+  correspondentes às suas responsabilidades.
+- Os códigos de autenticação são enviados pelo Resend com a identidade da USE
+  MDR e regras de validade, uso único e tentativas limitadas.
+- O fechamento de segunda a sexta passa a ocorrer às **18h** e continua sendo
+  enviado somente ao e-mail administrativo.
+- Imagens e carregamento do catálogo foram ajustados para reduzir consumo de
+  banda sem alterar qualidade visual ou navegação.
+- Foi criada uma documentação comercial com planos, papéis e checklist de
+  implantação isolada para os próximos clientes.
+
 ## 6 de setembro de 2026 — produtos em movimento
 
 - A foto do produto agora percorre um caminho suave até o carrinho ao ser
@@ -129,31 +154,6 @@ celular.
 
 Este arquivo continuará recebendo novas versões à medida que outras ideias forem
 incorporadas ao catálogo.
-
-## 9 a 11 de setembro de 2026 — estoque inteligente, ofertas e equipe
-
-- Nova aba **Aquisições** registra entradas e atualiza automaticamente o estoque
-  e o custo médio ponderado de cada produto.
-- O preço de revenda pode ser ajustado na entrada sem perder o histórico do
-  custo real das unidades disponíveis.
-- Produtos podem receber preço promocional com percentual calculado
-  automaticamente, preço original riscado e selo sobre a foto.
-- A opção **Exibir também em Produtos com desconto** coloca o item na primeira
-  vitrine de ofertas sem removê-lo da categoria e subcategoria originais.
-- A imagem e os textos da vitrine de descontos agora podem ser personalizados
-  no painel, mantendo o mesmo padrão visual das demais categorias.
-- Nova aba **Usuários** permite que cada funcionário receba o próprio código de
-  acesso por e-mail, com atividade identificada no histórico.
-- Operador, Gerente e Proprietária passam a enxergar e acessar somente as áreas
-  correspondentes às suas responsabilidades.
-- Os códigos de autenticação são enviados pelo Resend com a identidade da USE
-  MDR e regras de validade, uso único e tentativas limitadas.
-- O fechamento de segunda a sexta passa a ocorrer às **18h** e continua sendo
-  enviado somente ao e-mail administrativo.
-- Imagens e carregamento do catálogo foram ajustados para reduzir consumo de
-  banda sem alterar qualidade visual ou navegação.
-- Foi criada uma documentação comercial com planos, papéis e checklist de
-  implantação isolada para os próximos clientes.
 
 ## 19 de agosto de 2026 — carrossel e categorias reorganizados
 
