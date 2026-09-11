@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { applyFinalSaleTotal } from "../supabase/functions/_shared/sale-discount.ts";
 
-const correctionMigration = readFileSync(new URL("../supabase/migrations/20260818194500_sale_corrections.sql", import.meta.url), "utf8");
+const correctionMigration = readFileSync(new URL("../supabase/migrations/20260818184119_sale_corrections.sql", import.meta.url), "utf8");
 const salesFunction = readFileSync(new URL("../supabase/functions/manage-sales/index.ts", import.meta.url), "utf8");
 
 function registeredCents(items: Array<{ quantity: number; unit_price: number }>) {

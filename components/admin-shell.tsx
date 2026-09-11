@@ -3,9 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminNavigation } from "@/components/admin-navigation";
+import { AdminAccessProvider } from "@/components/admin-access-context";
 import { Brand } from "@/components/brand";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  return <AdminAccessProvider><AdminShellContent>{children}</AdminShellContent></AdminAccessProvider>;
+}
+
+function AdminShellContent({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 

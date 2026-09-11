@@ -2,10 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { HeroCarousel } from "@/components/hero-carousel";
-import { MobileNavigation } from "@/components/mobile-navigation";
 import { ProductCard, type ProductCardItem } from "@/components/product-card";
+import { getCatalogConfiguration } from "@/lib/catalog-configuration";
 import { demoProducts } from "@/lib/demo-products";
-import { getCategoryVisuals } from "@/lib/category-images";
 import { getHeroSlides } from "@/lib/hero-slides";
 import { getLaunchProducts } from "@/lib/products";
 
@@ -21,13 +20,14 @@ function launchGridLayout(productCount: number) {
 }
 
 export default async function Home() {
-  const [supabaseProducts, heroSlides, categories] = await Promise.all([
+  const [supabaseProducts, heroSlides, catalogConfiguration] = await Promise.all([
     getLaunchProducts(6),
     getHeroSlides(),
-    getCategoryVisuals(),
+    getCatalogConfiguration(),
   ]);
+  const { categories, promotionShowcase } = catalogConfiguration;
   const products: ProductCardItem[] = supabaseProducts.length
-    ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, price: product.price, image: product.imageUrl }))
+    ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, price: product.price, promotionalPrice: product.promotionalPrice, showInPromotions: product.showInPromotions, image: product.imageUrl }))
     : demoProducts;
   const launchGridClassName = launchGridLayout(products.length);
 
@@ -39,8 +39,8 @@ export default async function Home() {
           <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal">
             <Link href="/" prefetch={false} className="text-brand">Início</Link>
             <Link href="/catalogo" prefetch={false} className="transition-colors hover:text-brand">Buscar</Link>
-            <Link href="/favoritos" prefetch={false} className="transition-colors hover:text-brand">Favoritos</Link>
-            <Link href="/carrinho" prefetch={false} className="transition-colors hover:text-brand">Carrinho</Link>
+            <Link href="/favoritos" prefetch={false} data-favorites-target className="transition-colors hover:text-brand">Favoritos</Link>
+            <Link href="/carrinho" prefetch={false} data-cart-target className="transition-colors hover:text-brand">Carrinho</Link>
           </nav>
         </div>
       </header>
@@ -53,7 +53,15 @@ export default async function Home() {
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">EXPLORE</p><h2 id="categories-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">Categorias</h2></div>
             <Link href="/catalogo" prefetch={false} className="pb-1 text-xs font-bold text-brand sm:text-sm">Ver todas →</Link>
           </div>
-          <ul className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-7 md:gap-5 md:overflow-visible md:px-0">
+          <ul className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-8 md:gap-5 md:overflow-visible md:px-0">
+            <li className="w-24 shrink-0 snap-start text-center md:w-auto">
+              <Link href={{ pathname: "/catalogo", query: { categoria: "Produtos com desconto" }, hash: "produtos" }} prefetch={false} className="group block">
+                <span className="relative mx-auto flex aspect-square w-20 items-center justify-center overflow-hidden rounded-full border border-brand-border bg-gradient-to-br from-brand to-brand-strong font-serif text-4xl text-white shadow-sm sm:w-24 md:w-full md:max-w-28">
+                  {promotionShowcase.image ? <Image src={promotionShowcase.image} alt="" fill sizes="112px" className="object-cover transition-transform duration-300 group-hover:scale-105" /> : "%"}
+                </span>
+                <span className="mt-3 block text-xs font-semibold text-foreground group-hover:text-brand sm:text-sm">{promotionShowcase.title}</span>
+              </Link>
+            </li>
             {categories.map((category) => (
               <li key={category.key} className="w-24 shrink-0 snap-start text-center md:w-auto">
                 <Link href={{ pathname: "/catalogo", query: { categoria: category.filterCategory }, hash: "produtos" }} prefetch={false} className="group block">
@@ -77,7 +85,6 @@ export default async function Home() {
           </div>
         </section>
       </main>
-      <MobileNavigation active="home" />
     </div>
   );
 }

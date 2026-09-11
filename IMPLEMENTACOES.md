@@ -6,6 +6,22 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 
 [Voltar ao README](README.md) · [Abrir o catálogo](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
+## 6 de setembro de 2026 — movimento na jornada da cliente
+
+### Implementações
+
+- Animação da própria foto do produto até o carrinho ao adicionar um item.
+- Animação da própria foto até Favoritos ao salvar um produto, sem repetir o
+  efeito quando a cliente remove o favorito.
+- Destino responsivo das animações na navegação mobile e desktop.
+- Respeito à preferência de movimento reduzido configurada no aparelho.
+
+### Verificações
+
+- Testes automatizados da trajetória, dos destinos e da remoção do elemento
+  temporário depois da animação.
+- Nenhuma nova consulta ao Supabase para executar os efeitos visuais.
+
 ## 7 de agosto de 2026 — fundação da versão web
 
 ### Implementações
@@ -227,6 +243,109 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 - Home, catálogo, estoque e nova área de categorias responderam normalmente na
   prévia local.
 - Nenhum deploy desta etapa realizado antes do relatório e da autorização.
+
+## 6 de setembro de 2026 — navegação e interações mais fluidas
+
+### Implementações
+
+- Navegação inferior mobile transformada em um elemento persistente entre
+  Início, Buscar, Favoritos e Carrinho.
+- Indicador rosa animado com deslizamento suave de 650 ms entre os acessos.
+- Transição discreta de entrada para o conteúdo das páginas públicas.
+- Animação da fotografia real do produto percorrendo uma trajetória curva até
+  o ícone do carrinho.
+- Redução, desaparecimento e pulso do carrinho sincronizados com a chegada do
+  produto.
+- Efeito disponível nos cards do catálogo, nos favoritos, nos lançamentos e na
+  página individual do produto.
+- Código administrativo de seis dígitos reorganizado em campos individuais,
+  com avanço automático e suporte a colagem.
+- Estados visuais de otimização, salvamento e conclusão no cadastro de
+  produtos.
+
+### Desempenho e acessibilidade
+
+- Animações implementadas com recursos nativos do navegador, sem nova
+  dependência e sem novas requisições ao Supabase ou Cloudflare.
+- O efeito reutiliza a imagem já carregada do produto e remove o elemento
+  temporário após a conclusão.
+- Preferência de movimento reduzido respeitada automaticamente.
+- Navegadores antigos sem suporte à API de animação continuam adicionando o
+  produto normalmente, sem erro.
+
+### Verificações
+
+- 76 testes automatizados aprovados.
+- Lint, TypeScript e build Next.js aprovados.
+- Testes específicos confirmam trajetória, limpeza do elemento temporário,
+  acessibilidade e persistência da navbar.
+
+## 9 a 11 de setembro de 2026 — operação comercial consolidada
+
+### Estoque, aquisições e custo médio
+
+- Produtos continuam independentes no estoque e recebem entradas pela nova aba
+  Aquisições.
+- Cada entrada registra produto, quantidade, custo unitário, preço de revenda,
+  fornecedor, documento, data e observações quando informados.
+- O custo médio ponderado é recalculado com o saldo existente e a nova compra,
+  preservando um custo realista sem exigir cálculos manuais da administradora.
+- A entrada e a atualização do produto ocorrem de forma transacional para não
+  deixar custo e quantidade divergentes.
+- Histórico de aquisições e auditoria identificada permitem conferir quem fez
+  cada alteração.
+
+### Promoções e catálogo
+
+- Campo opcional de valor com desconto incorporado ao cadastro e à edição.
+- Percentual calculado automaticamente e exibido em um selo sobre a imagem.
+- Preço original riscado e preço promocional mantidos em cartões de altura e
+  espaçamento consistentes.
+- Caixa independente para exibir também o produto na vitrine Produtos com
+  desconto.
+- O item permanece simultaneamente em sua categoria e subcategoria originais.
+- A vitrine de ofertas ocupa a primeira posição das categorias quando possui
+  produtos selecionados.
+- Foto, título, descrição, chamada e esmaecimento da vitrine promocional podem
+  ser personalizados no painel de Categorias.
+
+### Usuários, OTP e auditoria
+
+- Nova aba Usuários para autorizar funcionários pelo próprio e-mail.
+- Login por código enviado pelo Resend com identidade visual da USE MDR.
+- Código administrativo de seis dígitos, uso único, expiração e limite de
+  tentativas.
+- Registros técnicos internos foram retirados da apresentação do histórico; a
+  interface mostra ação, pessoa, resultado e horário.
+- Papéis centralizados e aplicados na navegação e no servidor: Operador acessa
+  Vendas; Gerente acessa Vendas, Estoque, Aquisições, Categorias, Destaques e
+  Métricas; Proprietária acessa também Finanças e Usuários.
+- Funcionário desativado perde suas sessões administrativas verificadas.
+
+### Desempenho, relatórios e infraestrutura
+
+- Imagens públicas recebem cache duradouro e respostas administrativas usam
+  `no-store`.
+- O carregamento inicial evita requisitar imagens que não estão próximas da
+  área visível, reduzindo egress do Supabase.
+- Fechamento de segunda a sexta alterado de 17h para 18h, com destinatário
+  restrito ao e-mail administrativo da USE MDR.
+- Domínio r48.dev.br autenticado no Resend por DKIM e SPF para os e-mails
+  transacionais.
+- Configuração read-only do conector Supabase adicionada ao projeto para
+  inspeção segura de métricas e diagnóstico.
+- Documento de planos e implantação define a venda inicial por instâncias
+  isoladas e registra o caminho futuro para multitenancy.
+
+### Segurança e verificações
+
+- Cada Edge Function administrativa exige sessão, segunda verificação e a
+  permissão específica da área antes de ler ou alterar dados.
+- O painel recebe somente nome, papel e lista de áreas necessárias, sem expor
+  informações internas além do necessário.
+- Testes cobrem custo médio, promoções, OTP, usuários, permissões, horários,
+  auditoria, consumo e integridade do catálogo.
+- Backup local integral criado antes da consolidação comercial.
 
 ## Princípios mantidos em todas as etapas
 

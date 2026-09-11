@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminSalesPage() {
-  return <AdminAccessGate><AdminSales /></AdminAccessGate>;
+  return <AdminAccessGate section="sales"><AdminSales /></AdminAccessGate>;
 }

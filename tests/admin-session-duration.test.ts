@@ -12,12 +12,19 @@ const authorizationSource = readFileSync(
   "utf8",
 );
 
+const otpAuthorizationSource = readFileSync(
+  new URL("../supabase/functions/authorize-admin-session/index.ts", import.meta.url),
+  "utf8",
+);
+
 test("a segunda verificação administrativa autoriza cinco horas", () => {
   assert.match(verificationSource, /const AUTHORIZATION_HOURS = 5;/);
   assert.match(
     verificationSource,
     /AUTHORIZATION_HOURS \* 60 \* 60 \* 1000/,
   );
+  assert.match(otpAuthorizationSource, /const AUTHORIZATION_HOURS = 5;/);
+  assert.match(otpAuthorizationSource, /AUTHORIZATION_HOURS \* 60 \* 60 \* 1000/);
 });
 
 test("a autorização continua vinculada à sessão e ao prazo no servidor", () => {

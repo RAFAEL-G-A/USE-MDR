@@ -1,10 +1,12 @@
 "use client";
 
 import Image, { type StaticImageData } from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { HeartIcon } from "@/components/icons";
 import { useCart } from "@/components/cart-provider";
 import { useFavorites } from "@/components/favorites-provider";
+import { flyProductToCart, flyProductToFavorites } from "@/lib/fly-to-cart";
+import { effectiveProductPrice, productDiscountPercentage } from "@/lib/product-promotion";
 import Link from "next/link";
 
 export type ProductCardItem = {
@@ -12,6 +14,8 @@ export type ProductCardItem = {
   name: string;
   category: string;
   price: number;
+  promotionalPrice?: number | null;
+  showInPromotions?: boolean;
   image: StaticImageData | string;
   subcategory?: string | null;
 };
@@ -22,35 +26,46 @@ export function ProductCard({ product, showNew = false, eager = false }: { produ
   const { addProduct } = useCart();
   const { favoriteIds, toggleFavorite } = useFavorites();
   const [justAdded, setJustAdded] = useState(false);
+  const imageRef = useRef<HTMLDivElement>(null);
   const isFavorite = favoriteIds.has(product.id);
-  const portableProduct = { id: product.id, name: product.name, category: product.category, price: product.price, image: typeof product.image === "string" ? product.image : product.image.src };
+  const salePrice = effectiveProductPrice(product.price, product.promotionalPrice);
+  const discountPercentage = productDiscountPercentage(product.price, product.promotionalPrice);
+  const portableProduct = { id: product.id, name: product.name, category: product.category, price: salePrice, image: typeof product.image === "string" ? product.image : product.image.src };
 
   function handleAddProduct() {
+    flyProductToCart(imageRef.current);
     addProduct({
       id: product.id,
       name: product.name,
       category: product.category,
-      price: product.price,
+      price: salePrice,
       image: portableProduct.image,
     });
     setJustAdded(true);
     window.setTimeout(() => setJustAdded(false), 1200);
   }
 
+  function handleToggleFavorite() {
+    if (!isFavorite) flyProductToFavorites(imageRef.current);
+    toggleFavorite(portableProduct);
+  }
+
   return (
-    <article className="group min-w-0">
-      <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-brand-border/70 bg-brand-soft shadow-sm">
+    <article className="group flex h-full min-w-0 flex-col">
+      <div ref={imageRef} className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-brand-border/70 bg-brand-soft shadow-sm">
         <Link href={`/produto/${encodeURIComponent(product.id)}`} prefetch={false} aria-label={`Ver detalhes de ${product.name}`} className="absolute inset-0"><Image src={product.image} alt={product.name} fill loading={eager ? "eager" : "lazy"} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" /></Link>
-        {showNew && <span className="absolute left-2.5 top-2.5 rounded-full bg-brand px-2.5 py-1 text-[0.58rem] font-extrabold tracking-wide text-white sm:left-4 sm:top-4 sm:text-[0.65rem]">NOVO</span>}
-        <button type="button" onClick={() => toggleFavorite(portableProduct)} aria-label={`${isFavorite ? "Remover" : "Adicionar"} ${product.name} ${isFavorite ? "dos" : "aos"} favoritos`} className={`absolute right-2.5 top-2.5 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm sm:right-4 sm:top-4 sm:size-10 ${isFavorite ? "text-brand" : "text-foreground"}`}>
+        {discountPercentage !== null ? <span className="absolute left-2.5 top-2.5 rounded-full bg-brand px-2.5 py-1 text-[0.62rem] font-extrabold tracking-wide text-white shadow-md sm:left-4 sm:top-4 sm:px-3 sm:py-1.5 sm:text-xs">-{discountPercentage}%</span> : showNew ? <span className="absolute left-2.5 top-2.5 rounded-full bg-brand px-2.5 py-1 text-[0.58rem] font-extrabold tracking-wide text-white sm:left-4 sm:top-4 sm:text-[0.65rem]">NOVO</span> : null}
+        <button type="button" onClick={handleToggleFavorite} aria-label={`${isFavorite ? "Remover" : "Adicionar"} ${product.name} ${isFavorite ? "dos" : "aos"} favoritos`} className={`absolute right-2.5 top-2.5 flex size-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm sm:right-4 sm:top-4 sm:size-10 ${isFavorite ? "text-brand" : "text-foreground"}`}>
           <HeartIcon className="size-4 sm:size-5" filled={isFavorite} />
         </button>
       </div>
-      <div className="px-1 pt-3 sm:pt-4">
+      <div className="flex flex-1 flex-col px-1 pt-3 sm:pt-4">
         <p className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-brand sm:text-[0.68rem]">{product.category}</p>
-        <h3 className="mt-1 min-h-10 text-sm font-semibold leading-5 text-foreground sm:text-base"><Link href={`/produto/${encodeURIComponent(product.id)}`} prefetch={false} className="hover:text-brand">{product.name}</Link></h3>
-        <p className="mt-1 text-sm font-extrabold text-brand-strong sm:text-base">{currencyFormatter.format(product.price)}</p>
-        <button type="button" onClick={handleAddProduct} className={`mt-3 flex min-h-10 w-full items-center justify-center rounded-full border text-[0.65rem] font-extrabold transition-colors sm:text-xs ${justAdded ? "border-brand bg-brand text-white" : "border-brand text-brand hover:bg-brand hover:text-white"}`}>
+        <h3 className="mt-1 min-h-10 text-sm font-semibold leading-5 text-foreground sm:text-base"><Link href={`/produto/${encodeURIComponent(product.id)}`} prefetch={false} className="line-clamp-2 hover:text-brand">{product.name}</Link></h3>
+        <div className="mt-1 min-h-12 sm:min-h-14">
+          {discountPercentage !== null ? <><p className="text-xs font-semibold text-muted line-through sm:text-sm">{currencyFormatter.format(product.price)}</p><p className="text-base font-extrabold text-brand-strong sm:text-lg">{currencyFormatter.format(salePrice)}</p></> : <p className="pt-4 text-sm font-extrabold text-brand-strong sm:pt-5 sm:text-base">{currencyFormatter.format(product.price)}</p>}
+        </div>
+        <button type="button" onClick={handleAddProduct} className={`mt-auto flex min-h-10 w-full items-center justify-center rounded-full border text-[0.65rem] font-extrabold transition-colors sm:text-xs ${justAdded ? "border-brand bg-brand text-white" : "border-brand text-brand hover:bg-brand hover:text-white"}`}>
           {justAdded ? "ADICIONADO ✓" : "ADICIONAR"}
         </button>
       </div>

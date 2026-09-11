@@ -62,8 +62,8 @@ Deno.serve(async (request) => {
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const emailFrom = Deno.env.get("EMAIL_FROM");
-    const adminEmail = Deno.env.get("ADMIN_EMAIL");
-    if (!resendApiKey || !emailFrom || !adminEmail) {
+    const destinationEmail = user.email?.trim().toLowerCase();
+    if (!resendApiKey || !emailFrom || !destinationEmail) {
       throw new Error("O serviço de e-mail não foi configurado.");
     }
 
@@ -76,7 +76,7 @@ Deno.serve(async (request) => {
       },
       body: JSON.stringify({
         from: emailFrom,
-        to: [adminEmail],
+        to: [destinationEmail],
         subject: "Código de acesso ao inventário USE MDR",
         text: `Seu código de acesso é ${code}. Ele vence em ${CODE_LIFETIME_MINUTES} minutos. Se você não solicitou este código, altere sua senha.`,
         html: `<div style="font-family:Arial,sans-serif;color:#2b2326"><p>Seu código de acesso ao inventário da USE MDR é:</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;color:#e91e63">${code}</p><p>Ele vence em ${CODE_LIFETIME_MINUTES} minutos. Se você não solicitou este código, altere sua senha.</p></div>`,

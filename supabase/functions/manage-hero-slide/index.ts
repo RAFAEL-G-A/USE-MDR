@@ -1,9 +1,11 @@
 import {
+  assertAdminSection,
   assertInventoryAccess,
   authenticateAdmin,
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -31,6 +33,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
+    assertAdminSection(context, "highlights");
     await assertInventoryAccess(context);
 
     const contentType = request.headers.get("content-type") ?? "";
@@ -62,6 +65,13 @@ Deno.serve(async (request) => {
       if (existing?.image_path) {
         await context.adminClient.storage.from("products").remove([existing.image_path]);
       }
+      await writeAdminAudit(request, context, {
+        action: "hero_change",
+        resourceType: "hero_slide",
+        resourceId: String(slot),
+        result: "success",
+        metadata: { operation: "remove" },
+      });
       return json(request, { ok: true, slot, removed: true });
     }
 
@@ -130,6 +140,14 @@ Deno.serve(async (request) => {
     if (uploadedImagePath && existing?.image_path && existing.image_path !== uploadedImagePath) {
       await context.adminClient.storage.from("products").remove([existing.image_path]);
     }
+
+    await writeAdminAudit(request, context, {
+      action: "hero_change",
+      resourceType: "hero_slide",
+      resourceId: String(slot),
+      result: "success",
+      metadata: { operation: "save", image_changed: Boolean(uploadedImagePath) },
+    });
 
     return json(request, { ok: true, slide });
   } catch (error) {

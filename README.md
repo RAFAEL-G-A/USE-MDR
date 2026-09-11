@@ -5,7 +5,7 @@ beleza e transformar o carrinho em um pedido organizado pelo WhatsApp.
 
 [Visitar o catálogo da USE MDR](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
-[Implementações e correções](IMPLEMENTACOES.md) · [Histórico de novidades](NOVIDADES.md)
+[Implementações e correções](IMPLEMENTACOES.md) · [Histórico de novidades](NOVIDADES.md) · [Planos e implantação comercial](docs/PLANOS-E-IMPLANTACAO.md)
 
 > Projeto web independente do aplicativo mobile anterior. O produto final é um
 > site responsivo e não gera APK.
@@ -29,6 +29,9 @@ ou passar por um checkout tradicional.
 - paginação com 15 produtos por página;
 - páginas individuais com descrição formatada e galeria de imagens;
 - favoritos e carrinho preservados no próprio navegador;
+- navegação mobile persistente, com transições suaves entre as páginas;
+- animação da imagem real do produto até o carrinho ao adicionar um item;
+- animação da imagem real até Favoritos ao salvar um produto;
 - alteração de quantidades e cálculo automático do total;
 - pedido para o WhatsApp com produtos, quantidades, subtotais e total;
 - seção de lançamentos adaptável à quantidade disponível;
@@ -41,7 +44,10 @@ O projeto inclui uma área administrativa protegida, desenvolvida para organizar
 a operação sem expor dados internos no catálogo público.
 
 - **Estoque:** cadastro, edição e exclusão de produtos, valores, quantidades,
-  categorias, subcategorias e imagens;
+  categorias, subcategorias, imagens, preço promocional e seleção para a
+  vitrine de ofertas;
+- **Aquisições:** entrada de mercadorias com quantidade, custo unitário, preço
+  de revenda e atualização automática do custo médio ponderado;
 - **Vendas:** venda única ou agrupada, pesquisa de produtos, descontos,
   diferentes formas de pagamento e correção posterior com histórico;
 - **Destaques:** gerenciamento do carrossel, lançamentos e imagens das
@@ -49,7 +55,9 @@ a operação sem expor dados internos no catálogo público.
 - **Finanças:** receitas, despesas, recebimentos, produtos mais vendidos,
   fechamento por período e relatórios;
 - **Métricas:** visitantes anônimos, sessões, carrinhos levados ao WhatsApp e
-  taxa de conversão.
+  taxa de conversão;
+- **Usuários:** funcionários com OTP no próprio e-mail, perfis de Operador,
+  Gerente e Proprietária, permissões por área e histórico identificado.
 
 As imagens enviadas pelo painel são validadas, redimensionadas, comprimidas e
 convertidas automaticamente para WebP. Fotos substituídas também podem ser
@@ -61,6 +69,7 @@ removidas do Storage para evitar acúmulo desnecessário.
 - favoritos e carrinho ficam armazenados localmente no dispositivo;
 - as métricas não registram nome, telefone, e-mail, IP ou mensagem do pedido;
 - operações administrativas são verificadas no servidor;
+- permissões de função são verificadas novamente em cada API administrativa;
 - o acesso administrativo utiliza autenticação e uma segunda verificação;
 - tabelas internas são protegidas por regras de acesso no banco;
 - chaves privadas, senhas, tokens e e-mails administrativos não são
@@ -104,8 +113,10 @@ O projeto possui verificações automatizadas para:
 - horários comerciais e fechamentos financeiros;
 - formatos de imagem e conversão para WebP;
 - segurança das APIs administrativas;
+- aquisições, custo médio, promoções, usuários e permissões por função;
 - métricas anônimas e controle de duplicidade;
 - responsividade dos principais componentes administrativos.
+- trajetória e acessibilidade da animação de adicionar ao carrinho.
 
 ## Desenvolvimento local
 
@@ -135,7 +146,10 @@ são apresentadas cronologicamente em [NOVIDADES.md](NOVIDADES.md).
 
 ## Escopo atual
 
-O projeto foi planejado como catálogo e ferramenta de apoio à loja. Nesta fase,
+O projeto está pronto para operar como catálogo e ferramenta de gestão de uma
+loja por implantação isolada. A matriz comercial e o checklist para novos
+clientes estão em [Planos e implantação comercial](docs/PLANOS-E-IMPLANTACAO.md).
+Nesta fase,
 ele não inclui gateway de pagamento, checkout tradicional, cadastro obrigatório
 de clientes, perfil público de usuário ou aplicativo para lojas mobile.
 
