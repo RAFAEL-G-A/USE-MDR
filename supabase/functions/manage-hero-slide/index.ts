@@ -1,4 +1,5 @@
 import {
+  assertAdminSection,
   assertInventoryAccess,
   authenticateAdmin,
   corsHeaders,
@@ -32,6 +33,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
+    assertAdminSection(context, "highlights");
     await assertInventoryAccess(context);
 
     const contentType = request.headers.get("content-type") ?? "";

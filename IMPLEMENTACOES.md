@@ -280,6 +280,73 @@ credenciais, dados administrativos ou caminhos privados de acesso.
 - Testes específicos confirmam trajetória, limpeza do elemento temporário,
   acessibilidade e persistência da navbar.
 
+## 9 a 11 de setembro de 2026 — operação comercial consolidada
+
+### Estoque, aquisições e custo médio
+
+- Produtos continuam independentes no estoque e recebem entradas pela nova aba
+  Aquisições.
+- Cada entrada registra produto, quantidade, custo unitário, preço de revenda,
+  fornecedor, documento, data e observações quando informados.
+- O custo médio ponderado é recalculado com o saldo existente e a nova compra,
+  preservando um custo realista sem exigir cálculos manuais da administradora.
+- A entrada e a atualização do produto ocorrem de forma transacional para não
+  deixar custo e quantidade divergentes.
+- Histórico de aquisições e auditoria identificada permitem conferir quem fez
+  cada alteração.
+
+### Promoções e catálogo
+
+- Campo opcional de valor com desconto incorporado ao cadastro e à edição.
+- Percentual calculado automaticamente e exibido em um selo sobre a imagem.
+- Preço original riscado e preço promocional mantidos em cartões de altura e
+  espaçamento consistentes.
+- Caixa independente para exibir também o produto na vitrine Produtos com
+  desconto.
+- O item permanece simultaneamente em sua categoria e subcategoria originais.
+- A vitrine de ofertas ocupa a primeira posição das categorias quando possui
+  produtos selecionados.
+- Foto, título, descrição, chamada e esmaecimento da vitrine promocional podem
+  ser personalizados no painel de Categorias.
+
+### Usuários, OTP e auditoria
+
+- Nova aba Usuários para autorizar funcionários pelo próprio e-mail.
+- Login por código enviado pelo Resend com identidade visual da USE MDR.
+- Código administrativo de seis dígitos, uso único, expiração e limite de
+  tentativas.
+- Registros técnicos internos foram retirados da apresentação do histórico; a
+  interface mostra ação, pessoa, resultado e horário.
+- Papéis centralizados e aplicados na navegação e no servidor: Operador acessa
+  Vendas; Gerente acessa Vendas, Estoque, Aquisições, Categorias, Destaques e
+  Métricas; Proprietária acessa também Finanças e Usuários.
+- Funcionário desativado perde suas sessões administrativas verificadas.
+
+### Desempenho, relatórios e infraestrutura
+
+- Imagens públicas recebem cache duradouro e respostas administrativas usam
+  `no-store`.
+- O carregamento inicial evita requisitar imagens que não estão próximas da
+  área visível, reduzindo egress do Supabase.
+- Fechamento de segunda a sexta alterado de 17h para 18h, com destinatário
+  restrito ao e-mail administrativo da USE MDR.
+- Domínio r48.dev.br autenticado no Resend por DKIM e SPF para os e-mails
+  transacionais.
+- Configuração read-only do conector Supabase adicionada ao projeto para
+  inspeção segura de métricas e diagnóstico.
+- Documento de planos e implantação define a venda inicial por instâncias
+  isoladas e registra o caminho futuro para multitenancy.
+
+### Segurança e verificações
+
+- Cada Edge Function administrativa exige sessão, segunda verificação e a
+  permissão específica da área antes de ler ou alterar dados.
+- O painel recebe somente nome, papel e lista de áreas necessárias, sem expor
+  informações internas além do necessário.
+- Testes cobrem custo médio, promoções, OTP, usuários, permissões, horários,
+  auditoria, consumo e integridade do catálogo.
+- Backup local integral criado antes da consolidação comercial.
+
 ## Princípios mantidos em todas as etapas
 
 - Alterações de interface não devem recriar nem apagar produtos.

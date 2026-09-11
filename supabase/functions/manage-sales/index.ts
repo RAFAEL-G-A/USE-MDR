@@ -1,4 +1,5 @@
 import {
+  assertAdminSection,
   assertInventoryAccess,
   authenticateAdmin,
   corsHeaders,
@@ -50,6 +51,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
+    assertAdminSection(context, "sales");
     await assertInventoryAccess(context);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const action = String(body.action ?? "list");

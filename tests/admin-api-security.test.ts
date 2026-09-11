@@ -5,8 +5,11 @@ import test from "node:test";
 
 const protectedFunctions = [
   "check-admin-access",
+  "authorize-admin-session",
   "create-product",
   "manage-analytics",
+  "manage-admin-users",
+  "manage-inventory-acquisitions",
   "manage-category-image",
   "manage-catalog-categories",
   "manage-finances",
@@ -19,6 +22,7 @@ const protectedFunctions = [
 
 const inventoryFunctions = protectedFunctions.filter((name) => ![
   "check-admin-access",
+  "authorize-admin-session",
   "request-admin-code",
   "verify-admin-code",
 ].includes(name));
@@ -56,6 +60,28 @@ test("toda API que lê ou altera dados privados exige a segunda verificação", 
       functionSource(name),
       /await assertInventoryAccess\(/,
       `${name} deve exigir o código por e-mail`,
+    );
+  }
+});
+
+test("APIs administrativas aplicam a autorização da área no servidor", () => {
+  const expectedSections = {
+    "create-product": "inventory",
+    "manage-product": "inventory",
+    "manage-inventory-acquisitions": "acquisitions",
+    "manage-category-image": "categories",
+    "manage-catalog-categories": "categories",
+    "manage-sales": "sales",
+    "manage-hero-slide": "highlights",
+    "manage-finances": "finances",
+    "manage-analytics": "analytics",
+  } as const;
+
+  for (const [name, section] of Object.entries(expectedSections)) {
+    assert.match(
+      functionSource(name),
+      new RegExp(`assertAdminSection\\(context, ["']${section}["']\\)`),
+      `${name} deve validar a permissão ${section}`,
     );
   }
 });

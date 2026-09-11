@@ -7,6 +7,7 @@ import { AdminProductForm, FeedbackMessage, FormField } from "@/components/admin
 import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useCatalogTaxonomy } from "@/lib/use-catalog-taxonomy";
+import { productDiscountPercentage } from "@/lib/product-promotion";
 
 type GalleryImage = { id: string; imageUrl: string; storagePath: string; sortOrder: number };
 
@@ -14,6 +15,8 @@ type Product = {
   id: string;
   name: string;
   price: number;
+  promotionalPrice: number | null;
+  showInPromotions: boolean;
   costPrice: number;
   category: string;
   subcategory: string;
@@ -51,6 +54,8 @@ export function AdminInventoryManager() {
         id: String(item.id),
         name: String(item.name),
         price: Number(item.price),
+        promotionalPrice: item.promotional_price === null || item.promotional_price === undefined ? null : Number(item.promotional_price),
+        showInPromotions: Boolean(item.show_in_promotions),
         costPrice: Number(item.cost_price ?? 0),
         category: String(item.category),
         subcategory: String(item.subcategory ?? ""),
@@ -101,7 +106,7 @@ export function AdminInventoryManager() {
               <div key={product.id} className="overflow-hidden rounded-2xl border border-brand-border/80">
                 <div className="flex items-center gap-4 p-3 sm:p-4">
                   <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-brand-soft">{product.imageUrl && <Image src={product.imageUrl} alt={product.name} fill sizes="64px" className="object-cover" />}</div>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{product.name}</p><p className="mt-1 text-xs text-muted">Venda R$ {product.price.toFixed(2).replace(".", ",")} · Custo R$ {product.costPrice.toFixed(2).replace(".", ",")} · {product.stock} un.</p></div>
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold">{product.name}</p><p className="mt-1 text-xs text-muted">Venda R$ {product.price.toFixed(2).replace(".", ",")}{product.promotionalPrice !== null ? ` · Promo R$ ${product.promotionalPrice.toFixed(2).replace(".", ",")}` : ""} · Custo R$ {product.costPrice.toFixed(2).replace(".", ",")} · {product.stock} un.</p></div>
                   <button type="button" onClick={() => setEditingId(editingId === product.id ? null : product.id)} className="rounded-full border border-brand-border px-4 py-2 text-xs font-bold text-brand">{editingId === product.id ? "Fechar" : "Editar"}</button>
                 </div>
                 {editingId === product.id && <ProductEditor key={product.id} product={product} onChanged={refresh} />}
@@ -120,6 +125,8 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
   const initialCategory = product.category || catalogCategories[0] || "Lábios";
   const [category, setCategory] = useState(initialCategory);
   const [subcategory, setSubcategory] = useState(product.subcategory);
+  const [regularPriceInput, setRegularPriceInput] = useState(product.price.toFixed(2).replace(".", ","));
+  const [promotionalPriceInput, setPromotionalPriceInput] = useState(product.promotionalPrice?.toFixed(2).replace(".", ",") ?? "");
   const [primaryImage, setPrimaryImage] = useState<CompressedProductImage | null>(null);
   const [newGalleryImages, setNewGalleryImages] = useState<CompressedProductImage[]>([]);
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
@@ -130,6 +137,7 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
   const [feedback, setFeedback] = useState<Feedback>(null);
   const preview = useMemo(() => primaryImage ? URL.createObjectURL(primaryImage.file) : product.imageUrl, [primaryImage, product.imageUrl]);
   const newGalleryPreviews = useMemo(() => newGalleryImages.map((item) => URL.createObjectURL(item.file)), [newGalleryImages]);
+  const discountPercentage = productDiscountPercentage(Number(regularPriceInput.replace(/\./g, "").replace(",", ".")), promotionalPriceInput ? Number(promotionalPriceInput.replace(/\./g, "").replace(",", ".")) : null);
 
   useEffect(() => () => {
     if (primaryImage && preview) URL.revokeObjectURL(preview);
@@ -181,9 +189,10 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
     requestData.set("action", "update");
     requestData.set("id", product.id);
     requestData.set("name", String(formData.get("name") ?? "").trim());
-    requestData.set("price", String(Number(String(formData.get("price") ?? "").replace(/\./g, "").replace(",", "."))));
-    requestData.set("cost_price", String(Number(String(formData.get("cost_price") ?? "").replace(/\./g, "").replace(",", "."))));
-    requestData.set("stock", String(formData.get("stock") ?? ""));
+    requestData.set("price", String(Number(regularPriceInput.replace(/\./g, "").replace(",", "."))));
+    const promotionalPrice = promotionalPriceInput ? Number(promotionalPriceInput.replace(/\./g, "").replace(",", ".")) : null;
+    requestData.set("promotional_price", promotionalPrice === null ? "" : String(promotionalPrice));
+    requestData.set("show_in_promotions", String(formData.get("show_in_promotions") === "on"));
     requestData.set("category", category);
     requestData.set("subcategory", subcategory);
     requestData.set("description", String(formData.get("description") ?? "").trim());
@@ -212,10 +221,15 @@ function ProductEditor({ product, onChanged }: { product: Product; onChanged: ()
     <form onSubmit={handleUpdate} className="grid gap-5 border-t border-brand-border/70 bg-brand-soft/20 p-4 sm:grid-cols-2 sm:p-6">
       <div className="space-y-4">
         <FormField label="Nome" htmlFor={`edit-name-${product.id}`}><input id={`edit-name-${product.id}`} name="name" required defaultValue={product.name} maxLength={120} className="form-control" /></FormField>
-        <div className="grid grid-cols-3 gap-3"><FormField label="Venda" htmlFor={`edit-price-${product.id}`}><input id={`edit-price-${product.id}`} name="price" required inputMode="decimal" defaultValue={product.price.toFixed(2).replace(".", ",")} className="form-control" /></FormField><FormField label="Custo" htmlFor={`edit-cost-${product.id}`}><input id={`edit-cost-${product.id}`} name="cost_price" required inputMode="decimal" defaultValue={product.costPrice.toFixed(2).replace(".", ",")} className="form-control" /></FormField><FormField label="Estoque" htmlFor={`edit-stock-${product.id}`}><input id={`edit-stock-${product.id}`} name="stock" type="number" required min={0} step={1} defaultValue={product.stock} className="form-control" /></FormField></div>
+        <FormField label="Preço de venda" htmlFor={`edit-price-${product.id}`}><input id={`edit-price-${product.id}`} name="price" required inputMode="decimal" value={regularPriceInput} onChange={(event) => setRegularPriceInput(event.target.value)} className="form-control" /></FormField>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-brand-border bg-white p-4 text-xs text-muted"><p><strong className="text-foreground">Estoque:</strong> {product.stock} unidade(s)</p><p className="mt-1"><strong className="text-foreground">Custo médio:</strong> R$ {product.costPrice.toFixed(2).replace(".", ",")}</p><p className="mt-2">Alterado somente em Aquisições.</p></div>
+          <div className="rounded-2xl border border-brand-border bg-white p-4"><label htmlFor={`edit-promotional-price-${product.id}`} className="text-xs font-extrabold uppercase tracking-[0.1em]">Valor com desconto</label><input id={`edit-promotional-price-${product.id}`} name="promotional_price" inputMode="decimal" value={promotionalPriceInput} onChange={(event) => setPromotionalPriceInput(event.target.value)} className="form-control mt-2" placeholder="Sem desconto" /><p className={`mt-2 min-h-5 text-xs font-bold ${discountPercentage === null ? "text-muted" : "text-brand"}`}>{discountPercentage === null ? "Opcional" : `${discountPercentage}% de desconto`}</p></div>
+        </div>
         <div className="grid grid-cols-2 gap-3"><FormField label="Categoria" htmlFor={`edit-category-${product.id}`}><select id={`edit-category-${product.id}`} value={category} onChange={(event) => { const nextCategory = event.target.value; setCategory(nextCategory); setSubcategory(catalogTaxonomy[nextCategory]?.[0] ?? ""); }} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField><FormField label="Subcategoria" htmlFor={`edit-subcategory-${product.id}`}><select id={`edit-subcategory-${product.id}`} name="subcategory" value={subcategory} onChange={(event) => setSubcategory(event.target.value)} className="form-control">{(catalogTaxonomy[category] ?? []).map((item) => <option key={item}>{item}</option>)}</select></FormField></div>
         <FormField label="Descrição" htmlFor={`edit-description-${product.id}`}><textarea id={`edit-description-${product.id}`} name="description" rows={4} maxLength={1000} defaultValue={product.description} className="form-control resize-y" /></FormField>
         <label className="flex items-center gap-3 text-sm font-bold"><input name="is_launch" type="checkbox" defaultChecked={product.isLaunch} className="size-5 accent-brand" /> Exibir em Lançamentos</label>
+        <label className="flex items-start gap-3 rounded-2xl border border-brand-border bg-white p-4 text-sm font-bold"><input name="show_in_promotions" type="checkbox" defaultChecked={product.showInPromotions} disabled={discountPercentage === null} className="mt-0.5 size-5 accent-brand disabled:opacity-40" /><span>Exibir também em Produtos com desconto<span className="mt-1 block text-xs font-normal text-muted">O produto continua na categoria e subcategoria atuais.</span></span></label>
       </div>
       <div>
         <FormField label="Substituir imagem principal" htmlFor={`edit-image-${product.id}`}><label htmlFor={`edit-image-${product.id}`} className="relative flex aspect-square cursor-pointer overflow-hidden rounded-2xl border border-brand-border bg-white"><Image src={preview} alt={`Imagem de ${product.name}`} fill unoptimized={Boolean(primaryImage)} className="object-cover" /></label><input id={`edit-image-${product.id}`} type="file" accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => void preparePrimaryImage(event.target.files?.[0] ?? null)} /><p className="mt-2 text-xs text-muted">Aceita fotos do iPhone (HEIC/HEIF), JPEG, PNG e WebP. A nova foto será comprimida em WebP e a anterior será apagada após salvar.</p>{primaryImage && <p className="mt-1 text-xs font-bold text-emerald-700">{formatImageSize(primaryImage.originalSize)} → {formatImageSize(primaryImage.file.size)}</p>}</FormField>

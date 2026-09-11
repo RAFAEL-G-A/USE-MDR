@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClipboardEvent, FormEvent, KeyboardEvent } from "react";
 import { FunctionsHttpError, type Session } from "@supabase/supabase-js";
+import Link from "next/link";
+import {
+  ADMIN_SECTION_ROUTES,
+  useAdminAccess,
+  type AdminAccessProfile,
+  type AdminRole,
+  type AdminSection,
+} from "@/components/admin-access-context";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Feedback =
@@ -20,13 +28,31 @@ async function functionErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-export function AdminAccessGate({ children }: { children: React.ReactNode }) {
+const ROLE_LABELS: Record<AdminRole, string> = {
+  owner: "Proprietária",
+  manager: "Gerente",
+  operator: "Operador",
+};
+
+function isAccessProfile(value: unknown): value is AdminAccessProfile {
+  if (!value || typeof value !== "object") return false;
+  const profile = value as Partial<AdminAccessProfile>;
+  return typeof profile.displayName === "string"
+    && ["owner", "manager", "operator"].includes(String(profile.role))
+    && Array.isArray(profile.sections);
+}
+
+export function AdminAccessGate({ children, section }: { children: React.ReactNode; section: AdminSection }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const { profile, setProfile } = useAdminAccess();
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [checkingAccess, setCheckingAccess] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginCode, setLoginCode] = useState("");
+  const [loginCodeSent, setLoginCodeSent] = useState(false);
   const [requestingCode, setRequestingCode] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
@@ -34,6 +60,17 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const user = session?.user ?? null;
+
+  async function loadAccessProfile() {
+    const { data, error } = await supabase.functions.invoke("check-admin-access", { body: {} });
+    if (error || data?.authorized !== true || !isAccessProfile(data)) {
+      setProfile(null);
+      return null;
+    }
+    const nextProfile = { displayName: data.displayName, role: data.role, sections: data.sections };
+    setProfile(nextProfile);
+    return nextProfile;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -44,14 +81,15 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
       setCheckingSession(false);
       if (!nextSession) {
         setEmailVerified(false);
+        setProfile(null);
         setCheckingAccess(false);
         return;
       }
 
       setCheckingAccess(true);
-      const { data, error } = await supabase.functions.invoke("check-admin-access", { body: {} });
+      const nextProfile = await loadAccessProfile();
       if (cancelled) return;
-      setEmailVerified(!error && data?.authorized === true);
+      setEmailVerified(Boolean(nextProfile));
       setCheckingAccess(false);
     }
 
@@ -64,7 +102,7 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
       cancelled = true;
       data.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, setProfile]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,9 +116,37 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
     setAuthenticating(false);
   }
 
+  async function handleRequestLoginCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const email = String(new FormData(event.currentTarget).get("email") ?? "").trim().toLowerCase();
+    setAuthenticating(true); setFeedback(null);
+    const { error } = await supabase.functions.invoke("request-admin-login-otp", { body: { email } });
+    if (error) setFeedback({ type: "error", message: await functionErrorMessage(error, "Não foi possível enviar o código agora.") });
+    else { setLoginEmail(email); setLoginCodeSent(true); setFeedback({ type: "success", message: "Se o e-mail estiver autorizado, o código será enviado pelo Resend." }); }
+    setAuthenticating(false);
+  }
+
+  async function handleVerifyLoginCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setAuthenticating(true); setFeedback(null);
+    const { data, error } = await supabase.auth.verifyOtp({ email: loginEmail, token: loginCode.trim(), type: "email" });
+    if (error || !data.session) {
+      setFeedback({ type: "error", message: "Código inválido ou expirado." }); setAuthenticating(false); return;
+    }
+    const { data: authorization, error: authorizationError } = await supabase.functions.invoke("authorize-admin-session", { body: {} });
+    if (authorizationError || authorization?.ok !== true) {
+      await supabase.auth.signOut({ scope: "local" });
+      setFeedback({ type: "error", message: await functionErrorMessage(authorizationError, "Este e-mail não possui acesso administrativo ativo.") });
+    } else {
+      const nextProfile = await loadAccessProfile();
+      setEmailVerified(Boolean(nextProfile)); setLoginCodeSent(false); setLoginCode(""); setFeedback(null);
+    }
+    setAuthenticating(false);
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut({ scope: "local" });
     setEmailVerified(false);
+    setProfile(null);
     setCodeSent(false);
     setFeedback(null);
   }
@@ -119,7 +185,8 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
     if (data?.ok !== true) {
       setFeedback({ type: "error", message: "O código foi aceito, mas a autorização não pôde ser confirmada. Tente novamente." });
     } else {
-      setEmailVerified(true);
+      const nextProfile = await loadAccessProfile();
+      setEmailVerified(Boolean(nextProfile));
       setCodeSent(false);
       setFeedback(null);
     }
@@ -155,14 +222,19 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
     return (
       <AccessCard>
         <p className="text-xs font-extrabold tracking-[0.18em] text-brand">ACESSO RESTRITO</p>
-        <h1 className="mt-2 font-serif text-3xl">Entrar como administradora</h1>
-        <p className="mt-3 text-sm leading-6 text-muted">Use a conta administrativa do Supabase. O e-mail não é exibido às clientes.</p>
-        <form onSubmit={handleLogin} className="mt-7 space-y-5">
-          <GateField label="E-mail" htmlFor="admin-email"><input id="admin-email" name="email" type="email" autoComplete="username" required className="form-control" placeholder="voce@exemplo.com" /></GateField>
-          <GateField label="Senha" htmlFor="admin-password"><input id="admin-password" name="password" type="password" autoComplete="current-password" required minLength={8} className="form-control" placeholder="Sua senha administrativa" /></GateField>
+        <h1 className="mt-2 font-serif text-3xl">Entrar no painel</h1>
+        <p className="mt-3 text-sm leading-6 text-muted">Funcionários autorizados recebem o código no próprio e-mail.</p>
+        {!loginCodeSent ? <form onSubmit={handleRequestLoginCode} className="mt-7 space-y-5">
+          <GateField label="E-mail" htmlFor="staff-email"><input id="staff-email" name="email" type="email" autoComplete="email" required className="form-control" placeholder="voce@exemplo.com" /></GateField>
           {feedback && <FeedbackMessage feedback={feedback} />}
-          <button type="submit" disabled={authenticating} className="min-h-13 w-full rounded-full bg-brand px-6 text-sm font-extrabold text-white shadow-lg shadow-brand/20 disabled:opacity-60">{authenticating ? "ENTRANDO..." : "ENTRAR"}</button>
-        </form>
+          <button type="submit" disabled={authenticating} className="min-h-13 w-full rounded-full bg-brand px-6 text-sm font-extrabold text-white shadow-lg shadow-brand/20 disabled:opacity-60">{authenticating ? "ENVIANDO..." : "RECEBER CÓDIGO"}</button>
+        </form> : <form onSubmit={handleVerifyLoginCode} className="mt-7 space-y-5">
+          <GateField label="Código recebido" htmlFor="staff-code"><input id="staff-code" value={loginCode} onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, "").slice(0, 8))} inputMode="numeric" autoComplete="one-time-code" required minLength={6} maxLength={8} className="form-control text-center text-xl tracking-[0.3em]" /></GateField>
+          {feedback && <FeedbackMessage feedback={feedback} />}
+          <button type="submit" disabled={authenticating} className="min-h-13 w-full rounded-full bg-brand px-6 text-sm font-extrabold text-white disabled:opacity-60">{authenticating ? "VERIFICANDO..." : "ENTRAR"}</button>
+          <button type="button" onClick={() => { setLoginCodeSent(false); setLoginCode(""); setFeedback(null); }} className="w-full text-xs font-bold text-muted">Usar outro e-mail</button>
+        </form>}
+        <details className="mt-6 border-t border-brand-border pt-5"><summary className="cursor-pointer text-center text-xs font-bold text-brand">Entrar com senha administrativa</summary><form onSubmit={handleLogin} className="mt-5 space-y-4"><GateField label="E-mail" htmlFor="admin-email"><input id="admin-email" name="email" type="email" autoComplete="username" required className="form-control" /></GateField><GateField label="Senha" htmlFor="admin-password"><input id="admin-password" name="password" type="password" autoComplete="current-password" required minLength={8} className="form-control" /></GateField><button type="submit" disabled={authenticating} className="min-h-12 w-full rounded-full border border-brand-border px-6 text-sm font-extrabold text-brand disabled:opacity-60">ENTRAR COM SENHA</button></form></details>
       </AccessCard>
     );
   }
@@ -215,10 +287,22 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (!profile?.sections.includes(section)) {
+    const fallback = profile?.sections[0] ? ADMIN_SECTION_ROUTES[profile.sections[0]] : "/admin/vendas";
+    return (
+      <AccessCard>
+        <p className="text-xs font-extrabold tracking-[0.18em] text-brand">ACESSO LIMITADO</p>
+        <h1 className="mt-2 font-serif text-3xl">Área não liberada para sua função</h1>
+        <p className="mt-3 text-sm leading-6 text-muted">Seu acesso está ativo como {profile ? ROLE_LABELS[profile.role] : "funcionário"}, mas esta área exige outra permissão.</p>
+        <Link href={fallback} prefetch={false} className="mt-7 block min-h-12 rounded-full bg-brand px-6 py-3 text-center text-sm font-extrabold text-white">IR PARA UMA ÁREA LIBERADA</Link>
+      </AccessCard>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-border bg-white px-5 py-4 shadow-sm">
-        <div><p className="text-xs font-bold text-brand">Acesso administrativo autorizado</p><p className="mt-1 text-xs text-muted">{user.email}</p></div>
+        <div><p className="text-xs font-bold text-brand">Acesso administrativo autorizado</p><p className="mt-1 text-xs text-muted">{profile.displayName} · {ROLE_LABELS[profile.role]} · {user.email}</p></div>
         <button type="button" onClick={handleLogout} className="rounded-full border border-brand-border px-4 py-2 text-xs font-bold text-brand hover:bg-brand-soft">Sair</button>
       </div>
       {children}

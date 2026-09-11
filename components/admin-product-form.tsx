@@ -6,6 +6,7 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import { compressProductImage, formatImageSize, MAX_PRODUCT_IMAGES, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useCatalogTaxonomy } from "@/lib/use-catalog-taxonomy";
+import { productDiscountPercentage } from "@/lib/product-promotion";
 
 type Feedback = { type: "success" | "error"; message: string } | null;
 
@@ -29,11 +30,14 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
   const [processingImages, setProcessingImages] = useState(false);
   const [recentlySaved, setRecentlySaved] = useState(false);
   const [category, setCategory] = useState("Lábios");
+  const [priceInput, setPriceInput] = useState("");
+  const [promotionalPriceInput, setPromotionalPriceInput] = useState("");
   const [primaryImage, setPrimaryImage] = useState<CompressedProductImage | null>(null);
   const [galleryImages, setGalleryImages] = useState<CompressedProductImage[]>([]);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const imagePreview = useMemo(() => primaryImage ? URL.createObjectURL(primaryImage.file) : null, [primaryImage]);
   const galleryPreviews = useMemo(() => galleryImages.map((item) => URL.createObjectURL(item.file)), [galleryImages]);
+  const discountPercentage = productDiscountPercentage(normalizePrice(priceInput), promotionalPriceInput ? normalizePrice(promotionalPriceInput) : null);
 
   useEffect(() => () => {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
@@ -88,10 +92,8 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
     const formData = new FormData(event.currentTarget);
     const name = String(formData.get("name") ?? "").trim();
     const price = normalizePrice(String(formData.get("price") ?? ""));
-    const costPrice = normalizePrice(String(formData.get("cost_price") ?? "0"));
-    const stock = Number(formData.get("stock"));
-    if (!name || !Number.isFinite(price) || price <= 0 || !Number.isFinite(costPrice) || costPrice < 0 || !Number.isInteger(stock) || stock < 0) {
-      setFeedback({ type: "error", message: "Informe nome, preço e estoque válidos." });
+    if (!name || !Number.isFinite(price) || price <= 0) {
+      setFeedback({ type: "error", message: "Informe nome e preço válidos." });
       return;
     }
 
@@ -100,11 +102,12 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
     const requestData = new FormData();
     requestData.set("name", name);
     requestData.set("price", String(price));
-    requestData.set("cost_price", String(costPrice));
+    const promotionalPrice = normalizePrice(String(formData.get("promotional_price") ?? ""));
+    requestData.set("promotional_price", Number.isFinite(promotionalPrice) && promotionalPrice > 0 ? String(promotionalPrice) : "");
+    requestData.set("show_in_promotions", String(formData.get("show_in_promotions") === "on"));
     requestData.set("category", category);
     requestData.set("subcategory", String(formData.get("subcategory") ?? ""));
     requestData.set("description", String(formData.get("description") ?? "").trim());
-    requestData.set("stock", String(stock));
     requestData.set("is_launch", String(formData.get("is_launch") === "on"));
     requestData.set("image", primaryImage.file);
     galleryImages.forEach((item) => requestData.append("images", item.file));
@@ -115,6 +118,8 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
     } else {
       formRef.current?.reset();
       setCategory("Lábios");
+      setPriceInput("");
+      setPromotionalPriceInput("");
       setPrimaryImage(null);
       setGalleryImages([]);
       setRecentlySaved(true);
@@ -131,18 +136,18 @@ export function AdminProductForm({ onCreated }: { onCreated?: () => void }) {
       <form ref={formRef} onSubmit={handleSubmit} className="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-5">
           <FormField label="Nome do produto" htmlFor="product-name"><input id="product-name" name="name" required maxLength={120} className="form-control" placeholder="Ex.: Gloss Crystal Shine" /></FormField>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <FormField label="Preço" htmlFor="product-price"><input id="product-price" name="price" required inputMode="decimal" className="form-control" placeholder="29,90" /></FormField>
-            <FormField label="Custo" htmlFor="product-cost"><input id="product-cost" name="cost_price" required inputMode="decimal" defaultValue="0,00" className="form-control" placeholder="12,00" /></FormField>
-            <FormField label="Estoque" htmlFor="product-stock"><input id="product-stock" name="stock" type="number" required min={0} step={1} defaultValue={1} className="form-control" /></FormField>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Preço normal" htmlFor="product-price"><input id="product-price" name="price" required inputMode="decimal" value={priceInput} onChange={(event) => setPriceInput(event.target.value)} className="form-control" placeholder="10,00" /></FormField>
+            <FormField label="Valor com desconto" htmlFor="product-promotional-price"><input id="product-promotional-price" name="promotional_price" inputMode="decimal" value={promotionalPriceInput} onChange={(event) => setPromotionalPriceInput(event.target.value)} className="form-control" placeholder="8,00" aria-describedby="product-discount-help" /><p id="product-discount-help" className={`mt-2 min-h-5 text-xs font-bold ${discountPercentage === null ? "text-muted" : "text-brand"}`}>{discountPercentage === null ? "Opcional e sempre menor que o preço normal." : `${discountPercentage}% de desconto calculado automaticamente.`}</p></FormField>
           </div>
-          <p className="-mt-3 text-xs text-muted">O custo é confidencial e aparece somente no painel administrativo.</p>
+          <p className="-mt-3 text-xs text-muted">O produto será criado com estoque zero. Registre custo e quantidade na aba Aquisições.</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Categoria" htmlFor="product-category"><select id="product-category" name="category" value={category} onChange={(event) => setCategory(event.target.value)} className="form-control">{catalogCategories.map((item) => <option key={item}>{item}</option>)}</select></FormField>
             <FormField label="Subcategoria" htmlFor="product-subcategory"><select key={category} id="product-subcategory" name="subcategory" className="form-control">{(catalogTaxonomy[category] ?? []).map((item) => <option key={item}>{item}</option>)}</select></FormField>
           </div>
           <FormField label="Descrição" htmlFor="product-description"><textarea id="product-description" name="description" rows={5} maxLength={1000} className="form-control resize-y" placeholder="Benefícios, acabamento, conteúdo e diferenciais." /></FormField>
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-[1.25rem] border border-brand-border bg-brand-soft/45 px-4 py-4"><span><span className="block text-sm font-extrabold">Exibir em Lançamentos</span><span className="mt-1 block text-xs text-muted">Mostra o produto na página inicial.</span></span><input name="is_launch" type="checkbox" defaultChecked className="size-5 accent-brand" /></label>
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-[1.25rem] border border-brand-border bg-brand-soft/45 px-4 py-4"><span><span className="block text-sm font-extrabold">Exibir também em Produtos com desconto</span><span className="mt-1 block text-xs text-muted">Mantém categoria e subcategoria originais e adiciona o item à vitrine de ofertas.</span></span><input name="show_in_promotions" type="checkbox" disabled={discountPercentage === null} className="size-5 accent-brand disabled:opacity-40" /></label>
         </div>
         <FormField label="Imagem do produto" htmlFor="product-image">
           <label htmlFor="product-image" className="relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-[1.75rem] border border-dashed border-brand-border bg-brand-soft/50 text-center">

@@ -4,6 +4,8 @@ import { requestId } from "./admin-auth.ts";
 export type AdminAuditAction =
   | "admin_verification_success"
   | "admin_verification_failure"
+  | "admin_user_change"
+  | "inventory_acquisition"
   | "create_product"
   | "update_product"
   | "delete_product"

@@ -13,6 +13,9 @@ const auditedFunctions = [
   "manage-catalog-categories",
   "manage-category-image",
   "verify-admin-code",
+  "authorize-admin-session",
+  "manage-admin-users",
+  "manage-inventory-acquisitions",
 ].map((name) => readFileSync(`supabase/functions/${name}/index.ts`, "utf8")).join("\n");
 
 test("auditoria administrativa fica fechada para clientes e disponível ao service role", () => {
@@ -50,6 +53,8 @@ test("ações críticas usam o helper compartilhado de auditoria", () => {
     "category_change",
     "admin_verification_success",
     "admin_verification_failure",
+    "admin_user_change",
+    "inventory_acquisition",
   ]) {
     assert.match(auditedFunctions, new RegExp(`action: "${action}"`));
   }

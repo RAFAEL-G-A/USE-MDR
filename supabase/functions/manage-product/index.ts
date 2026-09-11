@@ -1,4 +1,5 @@
 import {
+  assertAdminSection,
   assertInventoryAccess,
   authenticateAdmin,
   corsHeaders,
@@ -54,6 +55,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
+    assertAdminSection(context, "inventory");
     await assertInventoryAccess(context);
     const contentType = request.headers.get("content-type") ?? "";
 
@@ -70,7 +72,7 @@ Deno.serve(async (request) => {
       ] = await Promise.all([
         context.adminClient
           .from("products")
-          .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
+          .select("id, name, price, promotional_price, show_in_promotions, category, subcategory, image_url, description, stock, is_launch, created_at")
           .order("created_at", { ascending: false }),
         context.adminClient.from("product_costs").select("product_id, cost_price"),
         context.adminClient
@@ -176,8 +178,9 @@ Deno.serve(async (request) => {
     const subcategory = readText(formData, "subcategory");
     const description = readText(formData, "description");
     const price = Number(readText(formData, "price"));
-    const costPrice = Number(readText(formData, "cost_price") || "0");
-    const stock = Number(readText(formData, "stock"));
+    const promotionalPriceText = readText(formData, "promotional_price");
+    const promotionalPrice = promotionalPriceText ? Number(promotionalPriceText) : null;
+    const showInPromotions = readText(formData, "show_in_promotions") === "true";
     const isLaunch = readText(formData, "is_launch") === "true";
     const image = formData.get("image");
     const galleryImages = formData.getAll("images").filter((item): item is File => item instanceof File && item.size > 0);
@@ -187,8 +190,8 @@ Deno.serve(async (request) => {
 
     if (!name || name.length > 120) return json(request, { error: "Informe um nome com até 120 caracteres." }, 400);
     if (!Number.isFinite(price) || price <= 0) return json(request, { error: "Informe um preço válido." }, 400);
-    if (!Number.isFinite(costPrice) || costPrice < 0) return json(request, { error: "Informe um preço de custo válido." }, 400);
-    if (!Number.isInteger(stock) || stock < 0) return json(request, { error: "Informe um estoque válido." }, 400);
+    if (promotionalPrice !== null && (!Number.isFinite(promotionalPrice) || promotionalPrice <= 0 || promotionalPrice >= price)) return json(request, { error: "O valor com desconto deve ser maior que zero e menor que o preço normal." }, 400);
+    if (showInPromotions && promotionalPrice === null) return json(request, { error: "Informe um valor com desconto antes de adicionar à vitrine de ofertas." }, 400);
     if (!(await isValidCatalogSelection(context.adminClient, category, subcategory))) return json(request, { error: "Categoria ou subcategoria inválida." }, 400);
     if (description.length > 1000) return json(request, { error: "A descrição deve ter até 1000 caracteres." }, 400);
     if (galleryImages.length + retainedGallery.length > MAX_GALLERY_IMAGES) {
@@ -216,9 +219,9 @@ Deno.serve(async (request) => {
 
     const { data: product, error: updateError } = await context.adminClient
       .from("products")
-      .update({ name, price, category, subcategory, description: description || null, stock, is_launch: isLaunch, image_url: imageUrl })
+      .update({ name, price, promotional_price: promotionalPrice, show_in_promotions: showInPromotions, category, subcategory, description: description || null, is_launch: isLaunch, image_url: imageUrl })
       .eq("id", productId)
-      .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
+      .select("id, name, price, promotional_price, show_in_promotions, category, subcategory, image_url, description, stock, is_launch, created_at")
       .single();
 
     if (updateError) {
@@ -279,16 +282,6 @@ Deno.serve(async (request) => {
       }
     }
 
-    const { error: costError } = await context.adminClient
-      .from("product_costs")
-      .upsert({
-        product_id: productId,
-        cost_price: costPrice,
-        updated_by: context.user.id,
-        updated_at: new Date().toISOString(),
-      });
-    if (costError) throw new Error(`Produto atualizado, mas o custo não pôde ser salvo: ${costError.message}`);
-
     const { data: updatedGallery } = await context.adminClient
       .from("product_images")
       .select("id, image_url, storage_path, sort_order")
@@ -300,19 +293,9 @@ Deno.serve(async (request) => {
       resourceType: "product",
       resourceId: productId,
       result: "success",
-      metadata: { category, gallery_images: updatedGallery?.length ?? 0 },
+      metadata: { category, gallery_images: updatedGallery?.length ?? 0, promotional_price: promotionalPrice, show_in_promotions: showInPromotions },
     });
-    if (Number(existing.stock) !== stock) {
-      await writeAdminAudit(request, context, {
-        action: "stock_change",
-        resourceType: "product",
-        resourceId: productId,
-        result: "success",
-        metadata: { previous_stock: Number(existing.stock), new_stock: stock },
-      });
-    }
-
-    return json(request, { ok: true, product: { ...product, cost_price: costPrice, images: updatedGallery ?? [] } });
+    return json(request, { ok: true, product: { ...product, images: updatedGallery ?? [] } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível alterar o produto.";
     return json(request, { error: message }, 401);
