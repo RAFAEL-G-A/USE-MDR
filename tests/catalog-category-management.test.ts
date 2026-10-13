@@ -92,3 +92,22 @@ test("painel oferece busca, contadores, prévia, visibilidade, ordem e históric
     "Alterações recentes",
   ]) assert.ok(component.includes(feature), `${feature} deve estar disponível`);
 });
+
+test("vitrine virtual de promoções é personalizável sem virar categoria de produto", () => {
+  const migration = source("../supabase/migrations/20260910230459_add_promotion_showcase_settings.sql");
+  const api = source("../supabase/functions/manage-catalog-categories/index.ts");
+  const admin = source("../components/admin-categories-manager.tsx");
+  const catalog = source("../app/catalogo/page.tsx");
+  const home = source("../app/page.tsx");
+
+  assert.match(migration, /create table if not exists public\.catalog_promotion_showcase/i);
+  assert.match(migration, /alter table public\.catalog_promotion_showcase enable row level security/i);
+  assert.match(migration, /grant select on table public\.catalog_promotion_showcase to anon, authenticated/i);
+  assert.match(migration, /revoke all on table public\.catalog_promotion_showcase from public, anon, authenticated/i);
+  assert.match(api, /update_promotion_showcase/);
+  assert.match(admin, /Personalizar Produtos com desconto/);
+  assert.match(admin, /TROCAR IMAGEM/);
+  assert.match(catalog, /promotionShowcase\.image/);
+  assert.match(home, /promotionShowcase\.title/);
+  assert.doesNotMatch(migration, /alter table public\.products/i);
+});

@@ -10,7 +10,7 @@ export function ProductImageGallery({ images, productName }: { images: string[];
 
   return (
     <div>
-      <div className="relative aspect-square overflow-hidden rounded-[2rem] border border-brand-border bg-brand-soft shadow-soft">
+      <div data-product-hero-image className="relative aspect-square overflow-hidden rounded-[2rem] border border-brand-border bg-brand-soft shadow-soft">
         <Image src={selectedImage} alt={selectedIndex === 0 ? productName : `${productName} — detalhe ${selectedIndex}`} fill priority sizes="(max-width: 768px) calc(100vw - 2.5rem), 540px" className="object-cover" />
       </div>
       {uniqueImages.length > 1 && (

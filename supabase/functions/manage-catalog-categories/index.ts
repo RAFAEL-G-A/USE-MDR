@@ -1,9 +1,11 @@
 import {
+  assertAdminSection,
   assertInventoryAccess,
   authenticateAdmin,
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.112.2";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -53,6 +55,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
+    assertAdminSection(context, "categories");
     await assertInventoryAccess(context);
     const contentType = request.headers.get("content-type") ?? "";
 
@@ -61,7 +64,7 @@ Deno.serve(async (request) => {
       const action = text(body.action);
 
       if (action === "list") {
-        const [categoriesResult, productsResult, historyResult] = await Promise.all([
+        const [categoriesResult, productsResult, historyResult, promotionResult] = await Promise.all([
           context.adminClient
             .from("catalog_categories")
             .select("category_key, name, description, image_url, sort_order, is_active, catalog_subcategories(name, sort_order)")
@@ -73,14 +76,20 @@ Deno.serve(async (request) => {
             .select("id, action, category_key, details, created_at")
             .order("created_at", { ascending: false })
             .limit(30),
+          context.adminClient
+            .from("catalog_promotion_showcase")
+            .select("title, description, image_url")
+            .eq("singleton", true)
+            .single(),
         ]);
-        const loadError = categoriesResult.error ?? productsResult.error ?? historyResult.error;
+        const loadError = categoriesResult.error ?? productsResult.error ?? historyResult.error ?? promotionResult.error;
         if (loadError) throw new Error(`Não foi possível carregar as categorias: ${loadError.message}`);
         return json(request, {
           ok: true,
           categories: categoriesResult.data ?? [],
           products: productsResult.data ?? [],
           history: historyResult.data ?? [],
+          promotion_showcase: promotionResult.data,
         });
       }
 
@@ -103,6 +112,7 @@ Deno.serve(async (request) => {
           .eq("category_key", key);
         if (error) throw new Error(`Não foi possível alterar a visibilidade: ${error.message}`);
         await logChange(context.adminClient, context.user.id, isActive ? "activate_category" : "hide_category", key);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "toggle", is_active: isActive } });
         return json(request, { ok: true, is_active: isActive });
       }
 
@@ -113,6 +123,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível salvar a ordem: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "reorder_categories", item_count: keys.length } });
         return json(request, { ok: true });
       }
 
@@ -124,6 +135,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível salvar a ordem: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: key, result: "success", metadata: { operation: "reorder", item_count: names.length } });
         return json(request, { ok: true });
       }
 
@@ -136,6 +148,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível renomear a categoria: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "rename" } });
         return json(request, { ok: true, affected_products: affectedProducts });
       }
 
@@ -152,6 +165,7 @@ Deno.serve(async (request) => {
           p_admin_user_id: context.user.id,
         });
         if (error) throw new Error(`Não foi possível renomear a subcategoria: ${error.message}`);
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: key, result: "success", metadata: { operation: "rename" } });
         return json(request, { ok: true, affected_products: affectedProducts });
       }
 
@@ -173,6 +187,7 @@ Deno.serve(async (request) => {
           throw new Error(`Não foi possível adicionar a subcategoria: ${error.message}`);
         }
         await logChange(context.adminClient, context.user.id, "add_subcategory", key, { subcategory });
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: String(data.id), result: "success", metadata: { operation: "create", category_key: key } });
         return json(request, { ok: true, subcategory: data }, 201);
       }
 
@@ -193,6 +208,7 @@ Deno.serve(async (request) => {
           .eq("name", subcategory);
         if (error) throw new Error(`Não foi possível remover a subcategoria: ${error.message}`);
         await logChange(context.adminClient, context.user.id, "delete_subcategory", key, { subcategory });
+        await writeAdminAudit(request, context, { action: "category_change", resourceType: "subcategory", resourceId: key, result: "success", metadata: { operation: "delete" } });
         return json(request, { ok: true, deleted: true });
       }
 
@@ -206,6 +222,56 @@ Deno.serve(async (request) => {
     const formData = await request.formData();
     const action = text(formData.get("action"));
     const image = formData.get("image");
+
+    if (action === "update_promotion_showcase") {
+      const title = text(formData.get("title"));
+      const description = text(formData.get("description"));
+      if (!title || title.length > 40) return json(request, { error: "Informe um título com até 40 caracteres." }, 400);
+      if (description.length > 100) return json(request, { error: "O texto de apoio deve ter até 100 caracteres." }, 400);
+      if (image !== null && !validImage(image)) return json(request, { error: "Envie uma imagem JPG, PNG ou WebP de até 5 MB." }, 400);
+
+      const { data: existing, error: readError } = await context.adminClient
+        .from("catalog_promotion_showcase")
+        .select("image_path")
+        .eq("singleton", true)
+        .single();
+      if (readError) throw new Error(`Não foi possível carregar a vitrine de promoções: ${readError.message}`);
+
+      let uploadedPath: string | null = null;
+      let imageUrl: string | null | undefined;
+      if (image instanceof File) {
+        uploadedPath = `categories/promotions/${crypto.randomUUID()}.${fileExtension(image)}`;
+        const { error: uploadError } = await context.adminClient.storage.from("products").upload(uploadedPath, image, {
+          cacheControl: "31536000", contentType: image.type, upsert: false,
+        });
+        if (uploadError) throw new Error(`Não foi possível enviar a imagem: ${uploadError.message}`);
+        imageUrl = context.adminClient.storage.from("products").getPublicUrl(uploadedPath).data.publicUrl;
+      }
+
+      const update = {
+        title,
+        description,
+        updated_at: new Date().toISOString(),
+        ...(uploadedPath && imageUrl ? { image_url: imageUrl, image_path: uploadedPath } : {}),
+      };
+      const { data: showcase, error: updateError } = await context.adminClient
+        .from("catalog_promotion_showcase")
+        .update(update)
+        .eq("singleton", true)
+        .select("title, description, image_url")
+        .single();
+      if (updateError) {
+        if (uploadedPath) await context.adminClient.storage.from("products").remove([uploadedPath]);
+        throw new Error(`Não foi possível atualizar a vitrine de promoções: ${updateError.message}`);
+      }
+      if (uploadedPath && existing.image_path && existing.image_path !== uploadedPath) {
+        await context.adminClient.storage.from("products").remove([existing.image_path]);
+      }
+      await logChange(context.adminClient, context.user.id, "update_promotion_showcase", "promotions");
+      await writeAdminAudit(request, context, { action: "category_change", resourceType: "promotion_showcase", resourceId: "promotions", result: "success", metadata: { operation: "update", image_changed: Boolean(uploadedPath) } });
+      return json(request, { ok: true, promotion_showcase: showcase });
+    }
+
     if (!validImage(image)) return json(request, { error: "Envie uma imagem JPG, PNG ou WebP de até 5 MB." }, 400);
 
     if (action === "create_category") {
@@ -243,6 +309,7 @@ Deno.serve(async (request) => {
         throw new Error(`Não foi possível criar a primeira subcategoria: ${subcategoryError.message}`);
       }
       await logChange(context.adminClient, context.user.id, "create_category", key, { name, first_subcategory: firstSubcategory });
+      await writeAdminAudit(request, context, { action: "category_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "create" } });
       return json(request, { ok: true, category }, 201);
     }
 
@@ -272,6 +339,7 @@ Deno.serve(async (request) => {
         await context.adminClient.storage.from("products").remove([existing.image_path]);
       }
       await logChange(context.adminClient, context.user.id, "update_category_image", key);
+      await writeAdminAudit(request, context, { action: "image_change", resourceType: "category", resourceId: key, result: "success", metadata: { operation: "update" } });
       return json(request, { ok: true, image_url: imageUrl });
     }
 

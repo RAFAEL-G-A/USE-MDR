@@ -1,9 +1,11 @@
 import {
+  assertAdminSection,
   assertInventoryAccess,
   authenticateAdmin,
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 import { isValidCatalogSelection } from "../_shared/catalog-validation.ts";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -31,6 +33,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
+    assertAdminSection(context, "inventory");
     await assertInventoryAccess(context);
 
     const contentType = request.headers.get("content-type") ?? "";
@@ -44,8 +47,9 @@ Deno.serve(async (request) => {
     const subcategory = readText(formData, "subcategory");
     const description = readText(formData, "description");
     const price = Number(readText(formData, "price"));
-    const costPrice = Number(readText(formData, "cost_price") || "0");
-    const stock = Number(readText(formData, "stock"));
+    const promotionalPriceText = readText(formData, "promotional_price");
+    const promotionalPrice = promotionalPriceText ? Number(promotionalPriceText) : null;
+    const showInPromotions = readText(formData, "show_in_promotions") === "true";
     const isLaunch = readText(formData, "is_launch") === "true";
     const image = formData.get("image");
     const galleryImages = formData.getAll("images").filter((item): item is File => item instanceof File && item.size > 0);
@@ -56,11 +60,11 @@ Deno.serve(async (request) => {
     if (!Number.isFinite(price) || price <= 0) {
       return json(request, { error: "Informe um preço válido." }, 400);
     }
-    if (!Number.isFinite(costPrice) || costPrice < 0) {
-      return json(request, { error: "Informe um preço de custo válido." }, 400);
+    if (promotionalPrice !== null && (!Number.isFinite(promotionalPrice) || promotionalPrice <= 0 || promotionalPrice >= price)) {
+      return json(request, { error: "O valor com desconto deve ser maior que zero e menor que o preço normal." }, 400);
     }
-    if (!Number.isInteger(stock) || stock < 0) {
-      return json(request, { error: "Informe um estoque inteiro igual ou maior que zero." }, 400);
+    if (showInPromotions && promotionalPrice === null) {
+      return json(request, { error: "Informe um valor com desconto antes de adicionar à vitrine de ofertas." }, 400);
     }
     if (!(await isValidCatalogSelection(context.adminClient, category, subcategory))) {
       return json(request, { error: "A categoria ou subcategoria não é válida." }, 400);
@@ -105,14 +109,16 @@ Deno.serve(async (request) => {
       .insert({
         name,
         price,
+        promotional_price: promotionalPrice,
+        show_in_promotions: showInPromotions,
         category,
         subcategory,
         image_url: uploadedImages[0].publicUrl,
         description: description || null,
-        stock,
+        stock: 0,
         is_launch: isLaunch,
       })
-      .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
+      .select("id, name, price, promotional_price, show_in_promotions, category, subcategory, image_url, description, stock, is_launch, created_at")
       .single();
 
     if (insertError) {
@@ -139,7 +145,7 @@ Deno.serve(async (request) => {
       .from("product_costs")
       .upsert({
         product_id: String(product.id),
-        cost_price: costPrice,
+        cost_price: 0,
         updated_by: context.user.id,
         updated_at: new Date().toISOString(),
       });
@@ -151,7 +157,15 @@ Deno.serve(async (request) => {
       throw new Error(`Não foi possível salvar o preço de custo: ${costError.message}`);
     }
 
-    return json(request, { ok: true, product: { ...product, cost_price: costPrice, images: galleryRows } }, 201);
+    await writeAdminAudit(request, context, {
+      action: "create_product",
+      resourceType: "product",
+      resourceId: String(product.id),
+      result: "success",
+      metadata: { category, stock: 0, gallery_images: galleryRows.length, promotional_price: promotionalPrice, show_in_promotions: showInPromotions },
+    });
+
+    return json(request, { ok: true, product: { ...product, cost_price: 0, images: galleryRows } }, 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível cadastrar o produto.";
     return json(request, { error: message }, 401);

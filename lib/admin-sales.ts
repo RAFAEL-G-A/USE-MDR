@@ -18,6 +18,9 @@ export type SaleRow = {
   payment_method: "credit_card" | "debit_card" | "pix" | "cash";
   payment_status: "paid" | "pending";
   sold_at: string;
+  created_by?: string | null;
+  created_by_name?: string | null;
+  created_at?: string;
   notes: string | null;
   voided_at: string | null;
 };
@@ -28,6 +31,8 @@ export type SaleOrder = {
   total: number;
   units: number;
   sold_at: string;
+  created_by_name: string | null;
+  created_at: string;
   customer_name: string | null;
   payment_method: SaleRow["payment_method"];
   payment_status: SaleRow["payment_status"];
@@ -103,6 +108,8 @@ export function groupSaleRows(rows: SaleRow[]): SaleOrder[] {
       total: orderRows.reduce((sum, row) => sum + row.total_amount, 0),
       units: orderRows.reduce((sum, row) => sum + row.quantity, 0),
       sold_at: first.sold_at,
+      created_by_name: first.created_by_name ?? null,
+      created_at: first.created_at ?? first.sold_at,
       customer_name: first.customer_name,
       payment_method: first.payment_method,
       payment_status: (orderRows.every((row) => row.payment_status === "paid") ? "paid" : "pending") as SaleRow["payment_status"],

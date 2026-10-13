@@ -5,5 +5,5 @@ import { AdminCategoriesManager } from "@/components/admin-categories-manager";
 export const metadata: Metadata = { title: "Categorias | Administração USE MDR", robots: { index: false, follow: false } };
 
 export default function AdminCategoriesPage() {
-  return <AdminAccessGate><AdminCategoriesManager /></AdminAccessGate>;
+  return <AdminAccessGate section="categories"><AdminCategoriesManager /></AdminAccessGate>;
 }

@@ -2,18 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAdminAccess, type AdminSection } from "@/components/admin-access-context";
 
-const items = [
-  { href: "/admin/estoque", label: "Gerenciar estoque", description: "Produtos, imagens e quantidades", icon: InventoryIcon },
-  { href: "/admin/categorias", label: "Categorias", description: "Categorias, subcategorias e imagens", icon: CategoriesIcon },
-  { href: "/admin/vendas", label: "Vendas", description: "Venda única ou com vários itens", icon: SalesIcon },
-  { href: "/admin/destaques", label: "Destaques", description: "Carrossel da página inicial", icon: HighlightsIcon },
-  { href: "/admin/financas", label: "Finanças", description: "Resultados, despesas e relatórios", icon: EarningsIcon },
-  { href: "/admin/metricas", label: "Métricas", description: "Visitas e pedidos pelo WhatsApp", icon: MetricsIcon },
+const items: Array<{ section: AdminSection; href: string; label: string; description: string; icon: typeof InventoryIcon }> = [
+  { section: "inventory", href: "/admin/estoque", label: "Gerenciar estoque", description: "Produtos, imagens e quantidades", icon: InventoryIcon },
+  { section: "acquisitions", href: "/admin/aquisicoes", label: "Aquisições", description: "Entradas e custo médio", icon: AcquisitionsIcon },
+  { section: "categories", href: "/admin/categorias", label: "Categorias", description: "Categorias, subcategorias e imagens", icon: CategoriesIcon },
+  { section: "sales", href: "/admin/vendas", label: "Vendas", description: "Venda única ou com vários itens", icon: SalesIcon },
+  { section: "highlights", href: "/admin/destaques", label: "Destaques", description: "Carrossel da página inicial", icon: HighlightsIcon },
+  { section: "finances", href: "/admin/financas", label: "Finanças", description: "Resultados, despesas e relatórios", icon: EarningsIcon },
+  { section: "analytics", href: "/admin/metricas", label: "Métricas", description: "Visitas e pedidos pelo WhatsApp", icon: MetricsIcon },
+  { section: "users", href: "/admin/usuarios", label: "Usuários", description: "Funcionários e acessos", icon: UsersIcon },
 ];
 
 export function AdminNavigation({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { profile } = useAdminAccess();
+  const visibleItems = profile ? items.filter((item) => profile.sections.includes(item.section)) : [];
 
   return (
     <nav className="flex h-full flex-col px-3 pb-4" aria-label="Áreas administrativas">
@@ -21,7 +26,7 @@ export function AdminNavigation({ collapsed = false, onNavigate }: { collapsed?:
         Acessos do painel
       </p>
       <div className="space-y-2">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
           return (
@@ -52,6 +57,14 @@ export function AdminNavigation({ collapsed = false, onNavigate }: { collapsed?:
 
 function InventoryIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="m4 7.5 8 4.5 8-4.5M12 12v9" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg>;
+}
+
+function AcquisitionsIcon({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v12H4zM7 4h10v4M8 12h8m-4-3v6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+function UsersIcon({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.5-1a3 3 0 1 0 0-6M3 20v-2a5.5 5.5 0 0 1 11 0v2m2-7a5 5 0 0 1 5 5v2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>;
 }
 
 function HighlightsIcon({ className }: { className?: string }) {

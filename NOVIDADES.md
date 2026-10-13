@@ -6,6 +6,40 @@ celular.
 
 [Conhecer o catálogo](https://use-mdr-beauty-preview.usemdr-web.workers.dev/catalogo)
 
+## 9 a 11 de setembro de 2026 — estoque inteligente, ofertas e equipe
+
+- Nova aba **Aquisições** registra entradas e atualiza automaticamente o estoque
+  e o custo médio ponderado de cada produto.
+- O preço de revenda pode ser ajustado na entrada sem perder o histórico do
+  custo real das unidades disponíveis.
+- Produtos podem receber preço promocional com percentual calculado
+  automaticamente, preço original riscado e selo sobre a foto.
+- A opção **Exibir também em Produtos com desconto** coloca o item na primeira
+  vitrine de ofertas sem removê-lo da categoria e subcategoria originais.
+- A imagem e os textos da vitrine de descontos agora podem ser personalizados
+  no painel, mantendo o mesmo padrão visual das demais categorias.
+- Nova aba **Usuários** permite que cada funcionário receba o próprio código de
+  acesso por e-mail, com atividade identificada no histórico.
+- Operador, Gerente e Proprietária passam a enxergar e acessar somente as áreas
+  correspondentes às suas responsabilidades.
+- Os códigos de autenticação são enviados pelo Resend com a identidade da USE
+  MDR e regras de validade, uso único e tentativas limitadas.
+- O fechamento de segunda a sexta passa a ocorrer às **18h** e continua sendo
+  enviado somente ao e-mail administrativo.
+- Imagens e carregamento do catálogo foram ajustados para reduzir consumo de
+  banda sem alterar qualidade visual ou navegação.
+- Foi criada uma documentação comercial com planos, papéis e checklist de
+  implantação isolada para os próximos clientes.
+
+## 6 de setembro de 2026 — produtos em movimento
+
+- A foto do produto agora percorre um caminho suave até o carrinho ao ser
+  adicionada.
+- Ao favoritar, a mesma foto segue até o coração da navegação, reforçando
+  visualmente que o produto foi salvo.
+- Os efeitos funcionam no celular e no desktop e não fazem novas requisições ao
+  catálogo.
+
 ## 7 de agosto de 2026 — o catálogo ganhou sua versão web
 
 - Criação do projeto em Next.js, separado do aplicativo mobile anterior.
@@ -196,3 +230,13 @@ incorporadas ao catálogo.
   produtos vinculados.
 - Botão de pré-visualização abre a categoria diretamente no catálogo.
 - Histórico protegido registra as alterações recentes com data e horário.
+
+## 6 de setembro de 2026 — experiência mobile mais fluida
+
+- A barra inferior permanece visível enquanto a cliente alterna entre Início,
+  Buscar, Favoritos e Carrinho.
+- O destaque da navegação desliza suavemente até a nova opção selecionada.
+- Ao adicionar um item, a fotografia do próprio produto percorre uma trajetória
+  até o carrinho e confirma visualmente a ação.
+- A interação mantém a loja leve, acessível e sem criar novas consultas ao
+  catálogo.

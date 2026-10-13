@@ -1,4 +1,5 @@
 import {
+  adminSectionsForRole,
   authenticateAdmin,
   corsHeaders,
   getInventoryAccess,
@@ -16,6 +17,9 @@ Deno.serve(async (request) => {
     const access = await getInventoryAccess(context);
     return json(request, {
       authorized: Boolean(access),
+      displayName: access ? context.staff.displayName : null,
+      role: access ? context.staff.role : null,
+      sections: access ? adminSectionsForRole(context.staff.role) : [],
       verifiedUntil: access?.verifiedUntil ?? null,
     });
   } catch (error) {

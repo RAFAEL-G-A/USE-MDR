@@ -1,0 +1,21 @@
+{
+  "store": "use-mdr",
+  "architectureVersion": 1,
+  "appVersion": "0.1.0",
+  "healthContract": "/api/health",
+  "capabilities": [
+    { "name": "admin-auth", "version": "1.0.0" },
+    { "name": "catalog", "version": "1.0.0" },
+    { "name": "products", "version": "1.0.0" },
+    { "name": "inventory", "version": "1.0.0" },
+    { "name": "cart", "version": "1.0.0" },
+    { "name": "favorites", "version": "1.0.0" },
+    { "name": "whatsapp", "version": "1.0.0" },
+    { "name": "sales", "version": "1.0.0" },
+    { "name": "finance", "version": "1.0.0" },
+    { "name": "analytics", "version": "1.0.0" },
+    { "name": "categories", "version": "1.0.0" },
+    { "name": "hero", "version": "1.0.0" },
+    { "name": "image-management", "version": "1.0.0" }
+  ]
+}

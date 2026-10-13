@@ -1,9 +1,11 @@
 import {
+  assertAdminSection,
   assertInventoryAccess,
   authenticateAdmin,
   corsHeaders,
   json,
 } from "../_shared/admin-auth.ts";
+import { writeAdminAudit } from "../_shared/admin-audit.ts";
 import { applyFinalSaleTotal } from "../_shared/sale-discount.ts";
 
 const PAYMENT_METHODS = new Set(["credit_card", "debit_card", "pix", "cash"]);
@@ -49,6 +51,7 @@ Deno.serve(async (request) => {
 
   try {
     const context = await authenticateAdmin(request);
+    assertAdminSection(context, "sales");
     await assertInventoryAccess(context);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const action = String(body.action ?? "list");
@@ -58,20 +61,34 @@ Deno.serve(async (request) => {
       const to = String(body.to ?? "");
       let query = context.adminClient
         .from("sales")
-        .select("id, order_id, product_id, product_name, quantity, unit_price, unit_cost, total_amount, total_cost, gross_profit, customer_name, payment_method, payment_status, payment_received_at, sold_at, notes, voided_at, created_at, updated_at")
+        .select("id, order_id, product_id, product_name, quantity, unit_price, unit_cost, total_amount, total_cost, gross_profit, customer_name, payment_method, payment_status, payment_received_at, sold_at, notes, voided_at, created_by, created_at, updated_at")
         .order("sold_at", { ascending: false })
         .limit(1000);
       if (from) query = query.gte("sold_at", from);
       if (to) query = query.lt("sold_at", to);
       const { data, error } = await query;
       if (error) throw new Error(`Não foi possível carregar as vendas: ${error.message}`);
+      const sales = data ?? [];
+      const creatorIds = [...new Set(sales.map((sale) => sale.created_by).filter((id): id is string => Boolean(id)))];
+      const { data: staff, error: staffError } = creatorIds.length
+        ? await context.adminClient.from("admin_staff").select("user_id, display_name").in("user_id", creatorIds)
+        : { data: [], error: null };
+      if (staffError) throw new Error(`Não foi possível carregar os responsáveis pelas vendas: ${staffError.message}`);
+      const creatorNames = new Map((staff ?? []).map((person) => [person.user_id, person.display_name]));
       const { data: revisions, error: revisionError } = await context.adminClient
         .from("sale_order_revisions")
         .select("id, order_id, previous_total, corrected_total, reason, corrected_at")
         .order("corrected_at", { ascending: false })
         .limit(1000);
       if (revisionError) throw new Error(`Não foi possível carregar as correções: ${revisionError.message}`);
-      return json(request, { ok: true, sales: data ?? [], corrections: revisions ?? [] });
+      return json(request, {
+        ok: true,
+        sales: sales.map((sale) => ({
+          ...sale,
+          created_by_name: sale.created_by ? creatorNames.get(sale.created_by) ?? null : null,
+        })),
+        corrections: revisions ?? [],
+      });
     }
 
     if (action === "create") {
@@ -102,10 +119,17 @@ Deno.serve(async (request) => {
         p_created_by: context.user.id,
       });
       if (error) throw new Error(error.message);
+      const saleId = Array.isArray(data) ? data[0]?.id : (data as { id?: string } | null)?.id;
       if (customerName) {
-        const saleId = Array.isArray(data) ? data[0]?.id : (data as { id?: string } | null)?.id;
         if (saleId) await context.adminClient.from("sales").update({ customer_name: customerName }).eq("id", saleId);
       }
+      await writeAdminAudit(request, context, {
+        action: "create_sale",
+        resourceType: "sale",
+        resourceId: saleId ? String(saleId) : null,
+        result: "success",
+        metadata: { item_count: 1, payment_status: paymentStatus },
+      });
       return json(request, { ok: true, sale: data, original_total: adjusted.originalTotal, final_total: adjusted.finalTotal }, 201);
     }
 
@@ -133,6 +157,14 @@ Deno.serve(async (request) => {
         p_created_by: context.user.id,
       });
       if (error) throw new Error(error.message);
+      const firstSale = Array.isArray(data) ? data[0] as Record<string, unknown> | undefined : undefined;
+      await writeAdminAudit(request, context, {
+        action: "create_sale",
+        resourceType: "sale_order",
+        resourceId: String(firstSale?.order_id ?? "") || null,
+        result: "success",
+        metadata: { item_count: items.length, payment_status: paymentStatus },
+      });
       return json(request, { ok: true, sales: data, original_total: adjusted.originalTotal, final_total: adjusted.finalTotal }, 201);
     }
 
@@ -166,6 +198,13 @@ Deno.serve(async (request) => {
         p_corrected_by: context.user.id,
       });
       if (error) throw new Error(error.message);
+      await writeAdminAudit(request, context, {
+        action: "update_sale",
+        resourceType: "sale_order",
+        resourceId: orderId,
+        result: "success",
+        metadata: { item_count: items.length, reason_provided: true },
+      });
       return json(request, { ok: true, sales: data, original_total: adjusted.originalTotal, final_total: adjusted.finalTotal });
     }
 
@@ -175,6 +214,13 @@ Deno.serve(async (request) => {
       if (!saleId || !PAYMENT_METHODS.has(paymentMethod)) return json(request, { error: "Venda ou forma de pagamento inválida." }, 400);
       const { data, error } = await context.adminClient.rpc("settle_sale", { p_sale_id: saleId, p_payment_method: paymentMethod });
       if (error) throw new Error(error.message);
+      await writeAdminAudit(request, context, {
+        action: "update_sale",
+        resourceType: "sale",
+        resourceId: saleId,
+        result: "success",
+        metadata: { operation: "settle" },
+      });
       return json(request, { ok: true, sale: data });
     }
 
@@ -183,6 +229,13 @@ Deno.serve(async (request) => {
       if (!saleId) return json(request, { error: "Venda não informada." }, 400);
       const { data, error } = await context.adminClient.rpc("void_sale", { p_sale_id: saleId });
       if (error) throw new Error(error.message);
+      await writeAdminAudit(request, context, {
+        action: "delete_sale",
+        resourceType: "sale",
+        resourceId: saleId,
+        result: "success",
+        metadata: { operation: "void" },
+      });
       return json(request, { ok: true, sale: data });
     }
 
@@ -192,6 +245,13 @@ Deno.serve(async (request) => {
       if (!orderId || !PAYMENT_METHODS.has(paymentMethod)) return json(request, { error: "Venda ou forma de pagamento inválida." }, 400);
       const { data, error } = await context.adminClient.rpc("settle_sale_order", { p_order_id: orderId, p_payment_method: paymentMethod });
       if (error) throw new Error(error.message);
+      await writeAdminAudit(request, context, {
+        action: "update_sale",
+        resourceType: "sale_order",
+        resourceId: orderId,
+        result: "success",
+        metadata: { operation: "settle" },
+      });
       return json(request, { ok: true, sales: data });
     }
 
@@ -200,6 +260,13 @@ Deno.serve(async (request) => {
       if (!orderId) return json(request, { error: "Venda não informada." }, 400);
       const { data, error } = await context.adminClient.rpc("void_sale_order", { p_order_id: orderId });
       if (error) throw new Error(error.message);
+      await writeAdminAudit(request, context, {
+        action: "delete_sale",
+        resourceType: "sale_order",
+        resourceId: orderId,
+        result: "success",
+        metadata: { operation: "void" },
+      });
       return json(request, { ok: true, sales: data });
     }
 

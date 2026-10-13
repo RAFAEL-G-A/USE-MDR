@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Destaques | Administração USE MDR"
 
 export default function AdminHighlightsPage() {
   return (
-    <AdminAccessGate>
+    <AdminAccessGate section="highlights">
       <div className="space-y-8">
         <AdminHeroSlides />
       </div>

@@ -5,5 +5,5 @@ import { AdminInventoryManager } from "@/components/admin-inventory-manager";
 export const metadata: Metadata = { title: "Gerenciar estoque | Administração USE MDR", robots: { index: false, follow: false } };
 
 export default function AdminInventoryPage() {
-  return <AdminAccessGate><AdminInventoryManager /></AdminAccessGate>;
+  return <AdminAccessGate section="inventory"><AdminInventoryManager /></AdminAccessGate>;
 }

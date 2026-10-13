@@ -3,9 +3,8 @@
 import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import { compressProductImage, formatImageSize, PRODUCT_IMAGE_ACCEPT, type CompressedProductImage } from "@/lib/image-compression";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 type AdminHeroSlide = {
   slot: number;
@@ -59,14 +58,15 @@ export function AdminHeroSlides() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fadeEnabled, setFadeEnabled] = useState(true);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<CompressedProductImage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [preparingImage, setPreparingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const currentSlide = slides[activeSlot - 1];
   const localPreview = useMemo(
-    () => (imageFile ? URL.createObjectURL(imageFile) : null),
+    () => (imageFile ? URL.createObjectURL(imageFile.file) : null),
     [imageFile],
   );
   const preview = localPreview ?? currentSlide.imageUrl;
@@ -123,6 +123,20 @@ export function AdminHeroSlides() {
     setFeedback(null);
   }
 
+  async function prepareImage(file: File | null) {
+    if (!file) return;
+    setPreparingImage(true);
+    setFeedback(null);
+    try {
+      setImageFile(await compressProductImage(file));
+    } catch (error) {
+      setImageFile(null);
+      setFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar a imagem." });
+    } finally {
+      setPreparingImage(false);
+    }
+  }
+
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFeedback(null);
@@ -131,11 +145,6 @@ export function AdminHeroSlides() {
       setFeedback({ type: "error", message: "Selecione uma imagem para ativar este destaque." });
       return;
     }
-    if (imageFile && (!imageFile.type.startsWith("image/") || imageFile.size > MAX_IMAGE_SIZE)) {
-      setFeedback({ type: "error", message: "A imagem deve ser JPG, PNG ou WebP e ter no máximo 5 MB." });
-      return;
-    }
-
     setSaving(true);
     const requestData = new FormData();
     requestData.set("action", "save");
@@ -144,7 +153,7 @@ export function AdminHeroSlides() {
     requestData.set("title", title.trim());
     requestData.set("description", description.trim());
     requestData.set("fade_enabled", String(fadeEnabled));
-    if (imageFile) requestData.set("image", imageFile);
+    if (imageFile) requestData.set("image", imageFile.file);
 
     const { data, error } = await supabase.functions.invoke<SlideResponse>("manage-hero-slide", {
       body: requestData,
@@ -263,16 +272,17 @@ export function AdminHeroSlides() {
                   <span className="max-w-52 px-6 text-sm leading-6 text-muted">Toque para escolher a imagem deste slide.</span>
                 )}
               </label>
-              <input id="hero-image" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} />
-              <p className="mt-2 text-xs leading-5 text-muted">Máximo de 5 MB. O esmaecimento pode ser ligado ou desligado separadamente em cada slide.</p>
+              <input id="hero-image" type="file" accept={PRODUCT_IMAGE_ACCEPT} disabled={preparingImage} className="sr-only" onChange={(event) => void prepareImage(event.target.files?.[0] ?? null)} />
+              <p className="mt-2 text-xs leading-5 text-muted">A foto será comprimida em WebP antes do envio. O esmaecimento pode ser ligado ou desligado separadamente em cada slide.</p>
+              {imageFile && <p className="mt-1 text-xs font-bold text-emerald-700">{formatImageSize(imageFile.originalSize)} → {formatImageSize(imageFile.file.size)}</p>}
             </HeroField>
           </div>
 
           <div className="lg:col-span-2">
             {feedback && <p role={feedback.type === "error" ? "alert" : "status"} className={`rounded-2xl border px-4 py-3 text-sm ${feedback.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>{feedback.message}</p>}
             <div className="mt-5 flex flex-wrap gap-3">
-              <button type="submit" disabled={saving || removing} className="min-h-13 rounded-full bg-brand px-6 text-xs font-extrabold text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand-strong disabled:cursor-wait disabled:opacity-60">
-                {saving ? "SALVANDO..." : `SALVAR SLIDE ${activeSlot}`}
+              <button type="submit" disabled={preparingImage || saving || removing} className="min-h-13 rounded-full bg-brand px-6 text-xs font-extrabold text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand-strong disabled:cursor-wait disabled:opacity-60">
+                {preparingImage ? "OTIMIZANDO..." : saving ? "SALVANDO..." : `SALVAR SLIDE ${activeSlot}`}
               </button>
               {currentSlide.imageUrl && (
                 <button type="button" onClick={handleRemove} disabled={saving || removing} className="min-h-13 rounded-full border border-brand-border px-6 text-xs font-extrabold text-brand transition-colors hover:bg-brand-soft disabled:cursor-wait disabled:opacity-60">

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const migration = readFileSync(
-  "supabase/migrations/20260819084500_reorganize_catalog_taxonomy.sql",
+  "supabase/migrations/20260819124501_reorganize_catalog_taxonomy.sql",
   "utf8",
 );
 

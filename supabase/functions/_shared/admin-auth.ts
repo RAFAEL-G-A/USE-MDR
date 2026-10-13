@@ -5,11 +5,55 @@ const DEFAULT_ORIGINS = [
   "https://use-mdr-beauty.netlify.app",
 ];
 
+const requestIds = new WeakMap<Request, string>();
+
+export function requestId(request: Request) {
+  const existing = requestIds.get(request);
+  if (existing) return existing;
+
+  const supplied = request.headers.get("x-request-id")?.trim() ?? "";
+  const id = /^[A-Za-z0-9._-]{8,64}$/.test(supplied) ? supplied : crypto.randomUUID();
+  requestIds.set(request, id);
+  return id;
+}
+
 export type AdminContext = {
   adminClient: SupabaseClient;
+  authMethods: string[];
   sessionId: string;
+  staff: {
+    displayName: string;
+    role: "owner" | "manager" | "operator";
+  };
   user: User;
 };
+
+export type AdminRole = AdminContext["staff"]["role"];
+export type AdminSection =
+  | "inventory"
+  | "acquisitions"
+  | "categories"
+  | "sales"
+  | "highlights"
+  | "finances"
+  | "analytics"
+  | "users";
+
+const ROLE_SECTIONS: Record<AdminRole, readonly AdminSection[]> = {
+  owner: ["inventory", "acquisitions", "categories", "sales", "highlights", "finances", "analytics", "users"],
+  manager: ["inventory", "acquisitions", "categories", "sales", "highlights", "analytics"],
+  operator: ["sales"],
+};
+
+export function adminSectionsForRole(role: AdminRole) {
+  return [...ROLE_SECTIONS[role]];
+}
+
+export function assertAdminSection(context: AdminContext, section: AdminSection) {
+  if (!ROLE_SECTIONS[context.staff.role].includes(section)) {
+    throw new Error("Sua função não possui permissão para acessar esta área.");
+  }
+}
 
 export function corsHeaders(request: Request) {
   const origin = request.headers.get("origin") ?? "";
@@ -32,7 +76,11 @@ export function corsHeaders(request: Request) {
 export function json(request: Request, body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: corsHeaders(request),
+    headers: {
+      ...corsHeaders(request),
+      "Cache-Control": "no-store",
+      "X-Request-Id": requestId(request),
+    },
   });
 }
 
@@ -41,7 +89,7 @@ function decodeJwtPayload(token: string) {
   if (!payload) throw new Error("Token inválido.");
   const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-  return JSON.parse(atob(padded)) as { session_id?: string };
+  return JSON.parse(atob(padded)) as { session_id?: string; amr?: Array<{ method?: string }> };
 }
 
 export async function authenticateAdmin(request: Request): Promise<AdminContext> {
@@ -55,7 +103,7 @@ export async function authenticateAdmin(request: Request): Promise<AdminContext>
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const adminEmail = Deno.env.get("ADMIN_EMAIL")?.trim().toLowerCase();
 
-  if (!supabaseUrl || !serviceRoleKey || !adminEmail) {
+  if (!supabaseUrl || !serviceRoleKey) {
     throw new Error("A função administrativa não foi configurada.");
   }
 
@@ -65,15 +113,57 @@ export async function authenticateAdmin(request: Request): Promise<AdminContext>
   const { data, error } = await adminClient.auth.getUser(token);
   const user = data.user;
 
-  if (error || !user) throw new Error("Sessão inválida ou expirada.");
-  if (user.email?.toLowerCase() !== adminEmail || user.app_metadata?.role !== "admin") {
-    throw new Error("Esta conta não possui acesso administrativo.");
+  if (error || !user?.email) throw new Error("Sessão inválida ou expirada.");
+
+  const normalizedEmail = user.email.trim().toLowerCase();
+  let { data: staff, error: staffError } = await adminClient
+    .from("admin_staff")
+    .select("display_name, role, status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  // Compatibilidade segura para a proprietária já existente. Depois da primeira
+  // autenticação, a autorização passa a existir na tabela da equipe.
+  if (!staff && !staffError && adminEmail && normalizedEmail === adminEmail && user.app_metadata?.role === "admin") {
+    const { data: bootstrapped, error: bootstrapError } = await adminClient
+      .from("admin_staff")
+      .upsert({
+        user_id: user.id,
+        email: normalizedEmail,
+        display_name: user.user_metadata?.display_name || "Proprietária",
+        role: "owner",
+        status: "active",
+      })
+      .select("display_name, role, status")
+      .single();
+    staff = bootstrapped;
+    staffError = bootstrapError;
   }
 
-  const sessionId = decodeJwtPayload(token).session_id;
+  if (staffError || !staff || staff.status !== "active") {
+    throw new Error("Esta conta não possui acesso administrativo ativo.");
+  }
+
+  const jwtPayload = decodeJwtPayload(token);
+  const sessionId = jwtPayload.session_id;
   if (!sessionId) throw new Error("A sessão não possui um identificador válido.");
 
-  return { adminClient, sessionId, user };
+  return {
+    adminClient,
+    authMethods: (jwtPayload.amr ?? []).map((entry) => String(entry.method ?? "")).filter(Boolean),
+    sessionId,
+    staff: {
+      displayName: String(staff.display_name),
+      role: staff.role as AdminContext["staff"]["role"],
+    },
+    user,
+  };
+}
+
+export function assertOwner(context: AdminContext) {
+  if (context.staff.role !== "owner") {
+    throw new Error("Somente a proprietária pode administrar usuários.");
+  }
 }
 
 export async function getInventoryAccess(context: AdminContext) {

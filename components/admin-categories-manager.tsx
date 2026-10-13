@@ -21,6 +21,7 @@ type Category = {
   subcategoryCounts: Record<string, number>;
   subcategories: string[];
 };
+type PromotionShowcase = { title: string; description: string; imageUrl: string | null };
 type HistoryItem = { id: string; action: string; category_key: string; details: Record<string, unknown>; created_at: string };
 type Feedback = { type: "success" | "error"; message: string } | null;
 
@@ -58,6 +59,7 @@ function historyLabel(action: string) {
     hide_category: "Categoria ocultada",
     reorder_categories: "Categorias reordenadas",
     reorder_subcategories: "Subcategorias reordenadas",
+    update_promotion_showcase: "Vitrine de promoções atualizada",
   } as Record<string, string>)[action] ?? "Configuração atualizada";
 }
 
@@ -74,16 +76,20 @@ export function AdminCategoriesManager() {
   const [subcategoryRenameValue, setSubcategoryRenameValue] = useState("");
   const [newCategoryImage, setNewCategoryImage] = useState<CompressedProductImage | null>(null);
   const [replacementImage, setReplacementImage] = useState<CompressedProductImage | null>(null);
+  const [promotionShowcase, setPromotionShowcase] = useState<PromotionShowcase>({ title: "Produtos com desconto", description: "Ofertas selecionadas", imageUrl: null });
+  const [promotionImage, setPromotionImage] = useState<CompressedProductImage | null>(null);
   const selected = categories.find((category) => category.key === selectedKey) ?? categories[0];
   const filteredCategories = categories.filter((category) => `${category.name} ${category.subcategories.join(" ")}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(search.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()));
   const replacementPreview = useMemo(() => replacementImage ? URL.createObjectURL(replacementImage.file) : null, [replacementImage]);
   const newCategoryPreview = useMemo(() => newCategoryImage ? URL.createObjectURL(newCategoryImage.file) : null, [newCategoryImage]);
+  const promotionPreview = useMemo(() => promotionImage ? URL.createObjectURL(promotionImage.file) : null, [promotionImage]);
 
   const loadCategories = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke<{
       categories?: Array<Record<string, unknown>>;
       products?: Array<{ category: string; subcategory: string }>;
       history?: HistoryItem[];
+      promotion_showcase?: { title: string; description: string; image_url: string | null };
     }>("manage-catalog-categories", { body: { action: "list" } });
     if (!error && data?.categories?.length) {
       const defaults = new Map(categoryDefinitions.map((category) => [category.key, category]));
@@ -108,6 +114,13 @@ export function AdminCategoriesManager() {
       setCategories(next);
       setSelectedKey((current) => next.some((category) => category.key === current) ? current : next[0]?.key ?? "");
       setHistory(data.history ?? []);
+      if (data.promotion_showcase) {
+        setPromotionShowcase({
+          title: data.promotion_showcase.title,
+          description: data.promotion_showcase.description,
+          imageUrl: data.promotion_showcase.image_url,
+        });
+      }
     }
     setLoading(false);
   }, [supabase]);
@@ -119,21 +132,45 @@ export function AdminCategoriesManager() {
   useEffect(() => () => {
     if (replacementPreview) URL.revokeObjectURL(replacementPreview);
     if (newCategoryPreview) URL.revokeObjectURL(newCategoryPreview);
-  }, [replacementPreview, newCategoryPreview]);
+    if (promotionPreview) URL.revokeObjectURL(promotionPreview);
+  }, [replacementPreview, newCategoryPreview, promotionPreview]);
 
-  async function prepareImage(file: File | null, target: "new" | "replacement") {
+  async function prepareImage(file: File | null, target: "new" | "replacement" | "promotion") {
     if (!file) return;
     setBusy(true);
     setFeedback(null);
     try {
       const compressed = await compressProductImage(file);
       if (target === "new") setNewCategoryImage(compressed);
-      else setReplacementImage(compressed);
+      else if (target === "replacement") setReplacementImage(compressed);
+      else setPromotionImage(compressed);
     } catch (error) {
       setFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar a imagem." });
     } finally {
       setBusy(false);
     }
+  }
+
+  async function updatePromotionShowcase(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setFeedback(null);
+    const source = new FormData(event.currentTarget);
+    const request = new FormData();
+    request.set("action", "update_promotion_showcase");
+    request.set("title", String(source.get("title") ?? ""));
+    request.set("description", String(source.get("description") ?? ""));
+    if (promotionImage) request.set("image", promotionImage.file);
+    const { data, error } = await supabase.functions.invoke<{ promotion_showcase?: { title: string; description: string; image_url: string | null } }>("manage-catalog-categories", { body: request });
+    if (error) setFeedback({ type: "error", message: await functionErrorMessage(error, "Não foi possível atualizar a vitrine de promoções.") });
+    else {
+      const updated = data?.promotion_showcase;
+      if (updated) setPromotionShowcase({ title: updated.title, description: updated.description, imageUrl: updated.image_url });
+      setPromotionImage(null);
+      await loadCategories();
+      setFeedback({ type: "success", message: "Vitrine de promoções atualizada no início das categorias." });
+    }
+    setBusy(false);
   }
 
   async function createCategory(event: FormEvent<HTMLFormElement>) {
@@ -294,6 +331,27 @@ export function AdminCategoriesManager() {
       </div>
 
       {feedback && <FeedbackMessage feedback={feedback} />}
+
+      <section className="rounded-[2rem] border border-brand-border bg-white p-5 shadow-soft sm:p-8">
+        <p className="text-xs font-extrabold tracking-[0.18em] text-brand">VITRINE DE PROMOÇÕES</p>
+        <h2 className="mt-2 font-serif text-3xl sm:text-4xl">Personalizar Produtos com desconto</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">Esta vitrine permanece primeiro no catálogo. Os produtos selecionados também continuam nas categorias e subcategorias originais.</p>
+        <form key={`${promotionShowcase.title}|${promotionShowcase.description}|${promotionShowcase.imageUrl ?? "default"}`} onSubmit={updatePromotionShowcase} className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="space-y-4">
+            <FormField label="Nome da vitrine" htmlFor="promotion-showcase-title"><input id="promotion-showcase-title" name="title" required maxLength={40} defaultValue={promotionShowcase.title} className="form-control" /></FormField>
+            <FormField label="Texto de apoio" htmlFor="promotion-showcase-description"><input id="promotion-showcase-description" name="description" maxLength={100} defaultValue={promotionShowcase.description} className="form-control" /></FormField>
+            <button type="submit" disabled={busy} className="min-h-13 rounded-full bg-brand px-6 text-xs font-extrabold text-white disabled:opacity-50">{busy ? "PROCESSANDO..." : "SALVAR VITRINE"}</button>
+          </div>
+          <div>
+            <label htmlFor="promotion-showcase-image" className="relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-[1.5rem] border border-dashed border-brand-border bg-gradient-to-br from-brand via-brand-strong to-[#7f173b] text-white">
+              {promotionPreview || promotionShowcase.imageUrl ? <Image src={promotionPreview ?? promotionShowcase.imageUrl!} alt="Prévia da vitrine de promoções" fill sizes="288px" unoptimized={Boolean(promotionPreview)} className="object-cover" /> : <span className="font-serif text-7xl">%</span>}
+              <span className="absolute inset-x-3 bottom-3 rounded-full bg-white/90 px-3 py-2 text-center text-[0.62rem] font-extrabold text-brand">TROCAR IMAGEM</span>
+            </label>
+            <input id="promotion-showcase-image" type="file" accept={PRODUCT_IMAGE_ACCEPT} className="sr-only" onChange={(event) => void prepareImage(event.target.files?.[0] ?? null, "promotion")} />
+            {promotionImage && <p className="mt-2 text-xs font-bold text-emerald-700">{formatImageSize(promotionImage.originalSize)} → {formatImageSize(promotionImage.file.size)}</p>}
+          </div>
+        </form>
+      </section>
 
       <section className="rounded-[2rem] border border-brand-border bg-white p-5 shadow-soft sm:p-8">
         <p className="text-xs font-extrabold tracking-[0.18em] text-brand">NOVA CATEGORIA</p>

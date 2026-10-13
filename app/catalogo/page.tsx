@@ -5,7 +5,6 @@ import { Brand } from "@/components/brand";
 import { CatalogProductPagination } from "@/components/catalog-product-pagination";
 import { CatalogScrollTarget } from "@/components/catalog-scroll-target";
 import { ArrowLeftIcon, SearchIcon } from "@/components/icons";
-import { MobileNavigation } from "@/components/mobile-navigation";
 import type { ProductCardItem } from "@/components/product-card";
 import { getCatalogConfiguration } from "@/lib/catalog-configuration";
 import { demoProducts } from "@/lib/demo-products";
@@ -27,12 +26,13 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
     getLatestProducts(500),
     getCatalogConfiguration(),
   ]);
-  const { categories, taxonomy: subcategories } = catalogConfiguration;
+  const { categories, taxonomy: subcategories, promotionShowcase } = catalogConfiguration;
+  const selectedCategoryLabel = selectedCategory === "Produtos com desconto" ? promotionShowcase.title : selectedCategory;
   const allProducts: ProductCardItem[] = supabaseProducts.length
-    ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, subcategory: product.subcategory, price: product.price, image: product.imageUrl }))
+    ? supabaseProducts.map((product) => ({ id: product.id, name: product.name, category: product.category, subcategory: product.subcategory, price: product.price, promotionalPrice: product.promotionalPrice, showInPromotions: product.showInPromotions, image: product.imageUrl }))
     : demoProducts;
   const filteredProducts = allProducts.filter((product) => {
-    const categoryMatch = !selectedCategory || normalized(product.category) === normalized(selectedCategory);
+    const categoryMatch = !selectedCategory || (selectedCategory === "Produtos com desconto" ? product.showInPromotions && product.promotionalPrice != null : normalized(product.category) === normalized(selectedCategory));
     const subcategoryMatch = !selectedSubcategory || normalized(product.subcategory ?? "") === normalized(selectedSubcategory);
     const searchMatch = !query || normalized(`${product.name} ${product.category} ${product.subcategory ?? ""}`).includes(normalized(query));
     return categoryMatch && subcategoryMatch && searchMatch;
@@ -44,7 +44,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         <div className="relative mx-auto flex max-w-7xl flex-col items-center justify-center px-5 py-3 md:px-8 md:py-4">
           <Link href="/" prefetch={false} aria-label="Voltar para a página inicial" className="absolute left-5 flex size-10 items-center justify-center rounded-full border border-brand-border bg-white text-foreground md:hidden"><ArrowLeftIcon className="size-5" /></Link>
           <Brand />
-          <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal"><Link href="/" prefetch={false}>Início</Link><Link href="/catalogo" prefetch={false} className="text-brand">Buscar</Link><Link href="/favoritos" prefetch={false}>Favoritos</Link><Link href="/carrinho" prefetch={false}>Carrinho</Link></nav>
+          <nav className="mt-2 hidden items-center gap-8 border-t border-brand-border/70 px-8 pt-2 text-sm font-semibold text-muted md:flex" aria-label="Navegação principal"><Link href="/" prefetch={false}>Início</Link><Link href="/catalogo" prefetch={false} className="text-brand">Buscar</Link><Link href="/favoritos" prefetch={false} data-favorites-target>Favoritos</Link><Link href="/carrinho" prefetch={false} data-cart-target>Carrinho</Link></nav>
         </div>
       </header>
 
@@ -58,6 +58,11 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         </form>
 
         <section className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4" aria-label="Categorias de produtos">
+          <Link href={{ pathname: "/catalogo", query: { categoria: "Produtos com desconto" }, hash: "produtos" }} prefetch={false} className="group relative min-h-56 overflow-hidden rounded-[1.75rem] border border-brand-border bg-gradient-to-br from-brand via-brand-strong to-[#7f173b] shadow-sm sm:min-h-72">
+            {promotionShowcase.image ? <Image src={promotionShowcase.image} alt="" fill loading="eager" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px" className="object-cover transition-transform duration-500 group-hover:scale-105" /> : <span className="absolute inset-0 flex items-center justify-center font-serif text-8xl text-white/10" aria-hidden="true">%</span>}
+            <span className="absolute inset-0 bg-gradient-to-t from-[#35151f]/80 via-[#54222c]/15 to-transparent" aria-hidden="true" />
+            <span className="absolute inset-x-0 bottom-0 z-10 p-5 text-white sm:p-6"><strong className="block text-xl font-extrabold text-white sm:text-2xl">{promotionShowcase.title}</strong><span className="mt-1 block text-xs text-white/90 sm:text-sm">{promotionShowcase.description}</span><span className="mt-4 flex items-center gap-2 text-xs font-bold text-white">Ver ofertas <span className="flex size-8 items-center justify-center rounded-full bg-white/20 text-lg backdrop-blur">→</span></span></span>
+          </Link>
           {categories.map((category, index) => (
             <Link key={category.key} href={{ pathname: "/catalogo", query: { categoria: category.filterCategory }, hash: "produtos" }} prefetch={false} className={`group relative min-h-56 overflow-hidden rounded-[1.75rem] border border-brand-border shadow-sm sm:min-h-72 ${index === categories.length - 1 && categories.length % 2 === 1 ? "col-span-2 lg:col-span-1" : ""}`}>
               <Image src={category.image} alt="" fill loading={index < 2 ? "eager" : "lazy"} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -73,12 +78,11 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
             <div><p className="mb-2 text-[0.68rem] font-extrabold tracking-[0.24em] text-brand">ENCONTRE O SEU FAVORITO</p><h2 id="products-title" className="font-serif text-4xl leading-none tracking-[-0.045em] sm:text-5xl">{selectedCategory || query ? "Resultados" : "Todos os produtos"}</h2></div>
             {(selectedCategory || selectedSubcategory || query) && <Link href="/catalogo#produtos" prefetch={false} className="rounded-full border border-brand-border bg-white px-4 py-2 text-xs font-bold text-brand">Limpar filtros</Link>}
           </div>
-          {selectedCategory && subcategories[selectedCategory] && <nav className="mb-6 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={`Subcategorias de ${selectedCategory}`}><Link href={{ pathname: "/catalogo", query: { categoria: selectedCategory }, hash: "produtos" }} prefetch={false} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold ${!selectedSubcategory ? "border-brand bg-brand text-white" : "border-brand-border bg-white text-brand"}`}>Todos</Link>{subcategories[selectedCategory].map((subcategory) => <Link key={subcategory} href={{ pathname: "/catalogo", query: { categoria: selectedCategory, subcategoria: subcategory }, hash: "produtos" }} prefetch={false} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold ${selectedSubcategory === subcategory ? "border-brand bg-brand text-white" : "border-brand-border bg-white text-brand"}`}>{subcategory}</Link>)}</nav>}
-          {(selectedCategory || selectedSubcategory || query) && <p className="mb-6 text-sm text-muted">{filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}{selectedSubcategory ? ` em ${selectedSubcategory}` : selectedCategory ? ` em ${selectedCategory}` : ""}{query ? ` para “${query}”` : ""}.</p>}
+          {selectedCategory && selectedCategory !== "Produtos com desconto" && subcategories[selectedCategory] && <nav className="mb-6 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={`Subcategorias de ${selectedCategory}`}><Link href={{ pathname: "/catalogo", query: { categoria: selectedCategory }, hash: "produtos" }} prefetch={false} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold ${!selectedSubcategory ? "border-brand bg-brand text-white" : "border-brand-border bg-white text-brand"}`}>Todos</Link>{subcategories[selectedCategory].map((subcategory) => <Link key={subcategory} href={{ pathname: "/catalogo", query: { categoria: selectedCategory, subcategoria: subcategory }, hash: "produtos" }} prefetch={false} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold ${selectedSubcategory === subcategory ? "border-brand bg-brand text-white" : "border-brand-border bg-white text-brand"}`}>{subcategory}</Link>)}</nav>}
+          {(selectedCategory || selectedSubcategory || query) && <p className="mb-6 text-sm text-muted">{filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}{selectedSubcategory ? ` em ${selectedSubcategory}` : selectedCategoryLabel ? ` em ${selectedCategoryLabel}` : ""}{query ? ` para “${query}”` : ""}.</p>}
           {filteredProducts.length ? <CatalogProductPagination key={`${query}|${selectedCategory}|${selectedSubcategory}`} products={filteredProducts} initialPage={initialPage} /> : <div className="rounded-[1.75rem] border border-dashed border-brand-border bg-brand-soft/40 px-6 py-12 text-center"><p className="font-serif text-2xl">Nenhum produto encontrado</p><p className="mt-2 text-sm text-muted">Tente outro termo ou explore uma categoria diferente.</p></div>}
         </section>
       </main>
-      <MobileNavigation active="catalog" />
     </div>
   );
 }

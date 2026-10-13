@@ -36,3 +36,15 @@ verify_jwt = false
 
 [functions.manage-analytics]
 verify_jwt = false
+
+[functions.authorize-admin-session]
+verify_jwt = false
+
+[functions.manage-admin-users]
+verify_jwt = false
+
+[functions.manage-inventory-acquisitions]
+verify_jwt = false
+
+[functions.request-admin-login-otp]
+verify_jwt = false

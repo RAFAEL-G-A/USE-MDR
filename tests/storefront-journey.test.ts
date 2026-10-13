@@ -67,3 +67,24 @@ test("o botão do WhatsApp abre sem aguardar o registro da métrica", () => {
   assert.match(cartPage, /rel="noopener noreferrer"/);
   assert.match(cartPage, /onClick=\{\(\) => void trackStoreEvent/);
 });
+
+test("a navegação mobile permanece no layout durante a troca de páginas", () => {
+  const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const navigation = readFileSync(new URL("../components/mobile-navigation.tsx", import.meta.url), "utf8");
+  const transition = readFileSync(new URL("../components/store-route-transition.tsx", import.meta.url), "utf8");
+  const routeSources = [
+    "../app/page.tsx",
+    "../app/catalogo/page.tsx",
+    "../app/produto/[id]/page.tsx",
+    "../components/favorites-page-client.tsx",
+    "../components/cart-page-client.tsx",
+  ].map((file) => readFileSync(new URL(file, import.meta.url), "utf8"));
+
+  assert.match(layout, /<MobileNavigation \/>/);
+  assert.match(layout, /<StoreRouteTransition>\{children\}<\/StoreRouteTransition>/);
+  assert.match(navigation, /usePathname\(\)/);
+  assert.match(navigation, /transition-\[transform,opacity\]/);
+  assert.equal(navigation.match(/duration-\[650ms\]/g)?.length, 2);
+  assert.match(transition, /key=\{pathname\}/);
+  routeSources.forEach((source) => assert.doesNotMatch(source, /<MobileNavigation/));
+});

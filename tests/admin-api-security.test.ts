@@ -5,8 +5,11 @@ import test from "node:test";
 
 const protectedFunctions = [
   "check-admin-access",
+  "authorize-admin-session",
   "create-product",
   "manage-analytics",
+  "manage-admin-users",
+  "manage-inventory-acquisitions",
   "manage-category-image",
   "manage-catalog-categories",
   "manage-finances",
@@ -19,6 +22,7 @@ const protectedFunctions = [
 
 const inventoryFunctions = protectedFunctions.filter((name) => ![
   "check-admin-access",
+  "authorize-admin-session",
   "request-admin-code",
   "verify-admin-code",
 ].includes(name));
@@ -43,12 +47,41 @@ test("todas as APIs administrativas validam o usuário no servidor", () => {
   }
 });
 
+test("respostas administrativas possuem request ID e não são armazenadas em cache", () => {
+  const source = readFileSync(new URL("../supabase/functions/_shared/admin-auth.ts", import.meta.url), "utf8");
+  assert.match(source, /"X-Request-Id": requestId\(request\)/);
+  assert.match(source, /"Cache-Control": "no-store"/);
+  assert.match(source, /\^\[A-Za-z0-9\._-\]\{8,64\}\$/);
+});
+
 test("toda API que lê ou altera dados privados exige a segunda verificação", () => {
   for (const name of inventoryFunctions) {
     assert.match(
       functionSource(name),
       /await assertInventoryAccess\(/,
       `${name} deve exigir o código por e-mail`,
+    );
+  }
+});
+
+test("APIs administrativas aplicam a autorização da área no servidor", () => {
+  const expectedSections = {
+    "create-product": "inventory",
+    "manage-product": "inventory",
+    "manage-inventory-acquisitions": "acquisitions",
+    "manage-category-image": "categories",
+    "manage-catalog-categories": "categories",
+    "manage-sales": "sales",
+    "manage-hero-slide": "highlights",
+    "manage-finances": "finances",
+    "manage-analytics": "analytics",
+  } as const;
+
+  for (const [name, section] of Object.entries(expectedSections)) {
+    assert.match(
+      functionSource(name),
+      new RegExp(`assertAdminSection\\(context, ["']${section}["']\\)`),
+      `${name} deve validar a permissão ${section}`,
     );
   }
 });
@@ -61,14 +94,22 @@ test("a rotina de relatórios exige um segredo forte e não aceita GET", () => {
   assert.doesNotMatch(source, /NEXT_PUBLIC_/);
 });
 
+test("cada tentativa de OTP é reservada com atualização condicional", () => {
+  const source = functionSource("verify-admin-code");
+  assert.match(source, /\.lt\("attempts", MAX_ATTEMPTS\)/);
+  assert.match(source, /\.eq\("attempts", challenge\.attempts\)/);
+  assert.match(source, /\.is\("consumed_at", null\)/);
+  assert.match(source, /if \(!reservedAttempt\)/);
+});
+
 test("a API pública de métricas limita origem, formato, robôs e duplicidade", () => {
   const source = functionSource("track-store-event");
-  const migration = readFileSync(new URL("../supabase/migrations/20260819133000_store_analytics.sql", import.meta.url), "utf8");
+  const migration = readFileSync(new URL("../supabase/migrations/20260819124516_store_analytics.sql", import.meta.url), "utf8");
   assert.match(source, /allowedOrigins\(\)\.includes\(origin\)/);
   assert.match(source, /BOT_PATTERN\.test/);
   assert.match(source, /EVENT_TYPES\.has\(eventType\)/);
-  assert.match(source, /cartItemCount < 1 \|\| cartItemCount > 500/);
-  assert.match(source, /cartTotal < 0 \|\| cartTotal > 1_000_000/);
+  assert.match(source, /requestedItemCount < 1 \|\| requestedItemCount > 500/);
+  assert.match(source, /requestedCartTotal < 0 \|\| requestedCartTotal > 1_000_000/);
   assert.match(migration, /unique \(session_id, event_type\)/i);
 });
 

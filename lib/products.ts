@@ -6,19 +6,21 @@ type ProductRow = {
   id: string | number;
   name: string;
   price: number | string;
+  promotional_price: number | string | null;
+  show_in_promotions: boolean;
   category: string;
   subcategory: string | null;
   image_url: string | null;
   description: string | null;
   stock: number;
-  is_launch: boolean;
-  created_at: string;
 };
 
 export type CatalogProduct = {
   id: string;
   name: string;
   price: number;
+  promotionalPrice: number | null;
+  showInPromotions: boolean;
   category: string;
   subcategory: string | null;
   imageUrl: string;
@@ -44,7 +46,7 @@ export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
+    .select("id, name, price, promotional_price, show_in_promotions, category, subcategory, image_url, stock")
     .gt("stock", 0)
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -61,10 +63,12 @@ export async function getLatestProducts(limit = 4): Promise<CatalogProduct[]> {
       id: String(product.id),
       name: product.name,
       price: parseProductPrice(product.price),
+      promotionalPrice: product.promotional_price === null ? null : parseProductPrice(product.promotional_price),
+      showInPromotions: product.show_in_promotions,
       category: product.category,
       subcategory: product.subcategory,
       imageUrl: product.image_url as string,
-      description: product.description,
+      description: null,
       stock: product.stock,
       images: [product.image_url as string],
     }))
@@ -80,7 +84,7 @@ export async function getLaunchProducts(limit = 6): Promise<CatalogProduct[]> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
+    .select("id, name, price, promotional_price, show_in_promotions, category, subcategory, image_url, stock")
     .eq("is_launch", true)
     .gt("stock", 0)
     .order("created_at", { ascending: false })
@@ -98,10 +102,12 @@ export async function getLaunchProducts(limit = 6): Promise<CatalogProduct[]> {
       id: String(product.id),
       name: product.name,
       price: parseProductPrice(product.price),
+      promotionalPrice: product.promotional_price === null ? null : parseProductPrice(product.promotional_price),
+      showInPromotions: product.show_in_promotions,
       category: product.category,
       subcategory: product.subcategory,
       imageUrl: product.image_url as string,
-      description: product.description,
+      description: null,
       stock: product.stock,
       images: [product.image_url as string],
     }))
@@ -115,6 +121,8 @@ async function queryProductById(id: string): Promise<CatalogProduct | null> {
       id: demoProduct.id,
       name: demoProduct.name,
       price: demoProduct.price,
+      promotionalPrice: demoProduct.promotionalPrice ?? null,
+      showInPromotions: demoProduct.showInPromotions ?? false,
       category: demoProduct.category,
       subcategory: demoProduct.subcategory ?? null,
       imageUrl: typeof demoProduct.image === "string" ? demoProduct.image : demoProduct.image.src,
@@ -129,7 +137,7 @@ async function queryProductById(id: string): Promise<CatalogProduct | null> {
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, name, price, category, subcategory, image_url, description, stock, is_launch, created_at")
+    .select("id, name, price, promotional_price, show_in_promotions, category, subcategory, image_url, description, stock")
     .eq("id", id)
     .limit(1)
     .returns<ProductRow[]>();
@@ -150,6 +158,8 @@ async function queryProductById(id: string): Promise<CatalogProduct | null> {
     id: String(product.id),
     name: product.name,
     price,
+    promotionalPrice: product.promotional_price === null ? null : parseProductPrice(product.promotional_price),
+    showInPromotions: product.show_in_promotions,
     category: product.category,
     subcategory: product.subcategory,
     imageUrl: product.image_url as string,

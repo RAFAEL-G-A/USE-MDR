@@ -113,7 +113,7 @@ export function AdminAnalytics() {
 
     <section className="rounded-[2rem] border border-brand-border bg-white p-4 shadow-soft sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-2">{(Object.keys(labels) as Period[]).map((item) => <button key={item} type="button" onClick={() => { setLoading(analyticsEnabled); setFeedback(null); setPeriod(item); }} className={`rounded-full px-4 py-2 text-xs font-bold ${period === item ? "bg-brand text-white" : "bg-brand-soft text-brand"}`}>{labels[item]}</button>)}</div>
+        <div className="flex gap-2" role="group" aria-label="Período das métricas">{(Object.keys(labels) as Period[]).map((item) => <button key={item} type="button" aria-pressed={period === item} onClick={() => { setLoading(analyticsEnabled); setFeedback(null); setPeriod(item); }} className={`rounded-full px-4 py-2 text-xs font-bold ${period === item ? "bg-brand text-white" : "bg-brand-soft text-brand"}`}>{labels[item]}</button>)}</div>
         <label className="flex items-center gap-2 text-xs font-bold text-muted">Até <input type="date" value={anchor} onChange={(event) => { setLoading(analyticsEnabled); setFeedback(null); setAnchor(event.target.value); }} className="rounded-xl border border-brand-border px-3 py-2 text-foreground" /></label>
       </div>
       <p className="mt-3 text-xs text-muted">Período: {formatStoreDate(`${range.start}T12:00:00-03:00`)} a {formatStoreDate(`${range.end}T12:00:00-03:00`)}</p>
